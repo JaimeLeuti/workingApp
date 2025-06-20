@@ -9,16 +9,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { 
-  Target,
-  TrendingUp,
-  Calendar,
-  Star,
-  Plus,
-  ChevronRight,
-  Award,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { Target, TrendingUp, Calendar, Star, Plus, ChevronRight, Award, CircleCheck as CheckCircle2 } from 'lucide-react-native';
 
 interface Goal {
   id: string;

@@ -9,7 +9,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, TrendingUp, ChevronRight, Edit3, LogOut } from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, TrendingUp, ChevronRight, CreditCard as Edit3, LogOut } from 'lucide-react-native';
 
 interface ProfileStat {
   label: string;

@@ -10,15 +10,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { 
-  Plus, 
-  Check, 
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2 } from 'lucide-react-native';
 
 interface Task {
   id: string;

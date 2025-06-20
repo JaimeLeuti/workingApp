@@ -8,16 +8,7 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { 
-  Calendar as CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Clock,
-  MapPin,
-  Users,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Users, CircleCheck as CheckCircle2 } from 'lucide-react-native';
 
 interface Event {
   id: string;
