@@ -13,12 +13,11 @@ import {
   Target,
   TrendingUp,
   Calendar,
-  Clock,
   Star,
   Plus,
   ChevronRight,
   Award,
-  Zap,
+  CheckCircle2,
 } from 'lucide-react-native';
 
 interface Goal {
@@ -81,39 +80,39 @@ export default function GoalsScreen() {
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.headerTitle}>Goals</Text>
-              <Text style={styles.headerSubtitle}>Track your long-term objectives</Text>
+              <Text style={styles.headerSubtitle}>Track your progress</Text>
             </View>
             <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
-              <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
+              <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
 
           {/* Stats Cards */}
           <View style={styles.statsContainer}>
             <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Target size={20} color="#6366F1" strokeWidth={2.5} />
+              <View style={[styles.statIcon, { backgroundColor: '#EEF2FF' }]}>
+                <Target size={18} color="#4F46E5" strokeWidth={2} />
               </View>
               <Text style={styles.statNumber}>{activeGoals}</Text>
-              <Text style={styles.statLabel}>Active Goals</Text>
+              <Text style={styles.statLabel}>Active</Text>
             </View>
             
             <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <Award size={20} color="#10B981" strokeWidth={2.5} />
+              <View style={[styles.statIcon, { backgroundColor: '#DCFCE7' }]}>
+                <Award size={18} color="#10B981" strokeWidth={2} />
               </View>
               <Text style={styles.statNumber}>{completedGoals}</Text>
               <Text style={styles.statLabel}>Completed</Text>
             </View>
             
             <View style={styles.statCard}>
-              <View style={styles.statIcon}>
-                <TrendingUp size={20} color="#F59E0B" strokeWidth={2.5} />
+              <View style={[styles.statIcon, { backgroundColor: '#FEF3C7' }]}>
+                <TrendingUp size={18} color="#F59E0B" strokeWidth={2} />
               </View>
               <Text style={styles.statNumber}>
                 {goals.length > 0 ? Math.round((completedGoals / goals.length) * 100) : 0}%
               </Text>
-              <Text style={styles.statLabel}>Success Rate</Text>
+              <Text style={styles.statLabel}>Success</Text>
             </View>
           </View>
         </View>
@@ -124,11 +123,10 @@ export default function GoalsScreen() {
         {/* Active Goals Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Zap size={18} color="#6366F1" strokeWidth={2.5} />
-              <Text style={styles.sectionTitle}>Active Goals</Text>
+            <Text style={styles.sectionTitle}>Active Goals</Text>
+            <View style={styles.sectionBadge}>
+              <Text style={styles.sectionBadgeText}>{activeGoals}</Text>
             </View>
-            <Text style={styles.sectionCount}>{activeGoals}</Text>
           </View>
 
           {goals.filter(goal => !goal.isCompleted).map((goal) => (
@@ -140,11 +138,10 @@ export default function GoalsScreen() {
         {completedGoals > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <Award size={18} color="#10B981" strokeWidth={2.5} />
-                <Text style={styles.sectionTitle}>Completed Goals</Text>
+              <Text style={styles.sectionTitle}>Completed Goals</Text>
+              <View style={styles.sectionBadge}>
+                <Text style={styles.sectionBadgeText}>{completedGoals}</Text>
               </View>
-              <Text style={styles.sectionCount}>{completedGoals}</Text>
             </View>
 
             {goals.filter(goal => goal.isCompleted).map((goal) => (
@@ -156,14 +153,14 @@ export default function GoalsScreen() {
         {/* Inspiration Section */}
         <View style={styles.inspirationSection}>
           <Image
-            source={{ uri: 'https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg?auto=compress&cs=tinysrgb&w=400&h=200&dpr=2' }}
+            source={{ uri: 'https://images.pexels.com/photos/1181533/pexels-photo-1181533.jpeg?auto=compress&cs=tinysrgb&w=400&h=160&dpr=2' }}
             style={styles.inspirationImage}
           />
           <View style={styles.inspirationOverlay}>
-            <Star size={24} color="#FFFFFF" strokeWidth={2} />
+            <Star size={20} color="#FFFFFF" strokeWidth={2} />
             <Text style={styles.inspirationTitle}>Keep Going!</Text>
             <Text style={styles.inspirationText}>
-              Every small step brings you closer to your dreams
+              Every step brings you closer to your dreams
             </Text>
           </View>
         </View>
@@ -185,13 +182,17 @@ function GoalCard({ goal }: { goal: Goal }) {
           </Text>
           <Text style={styles.goalDescription}>{goal.description}</Text>
         </View>
-        <ChevronRight size={20} color="#9CA3AF" strokeWidth={2} />
+        {goal.isCompleted ? (
+          <CheckCircle2 size={20} color="#10B981" strokeWidth={2} />
+        ) : (
+          <ChevronRight size={18} color="#9CA3AF" strokeWidth={2} />
+        )}
       </View>
 
       <View style={styles.goalProgress}>
         <View style={styles.progressInfo}>
           <Text style={styles.progressText}>
-            {goal.progress} of {goal.target} {goal.isCompleted ? '✓' : ''}
+            {goal.progress} of {goal.target}
           </Text>
           <Text style={styles.progressPercentage}>
             {Math.round(progressPercentage)}%
@@ -212,14 +213,14 @@ function GoalCard({ goal }: { goal: Goal }) {
       </View>
 
       <View style={styles.goalFooter}>
-        <View style={styles.categoryBadge}>
+        <View style={[styles.categoryBadge, { backgroundColor: goal.color + '20' }]}>
           <Text style={[styles.categoryText, { color: goal.color }]}>
             {goal.category}
           </Text>
         </View>
         
         <View style={styles.dueDateContainer}>
-          <Calendar size={14} color="#9CA3AF" strokeWidth={2} />
+          <Calendar size={12} color="#9CA3AF" strokeWidth={2} />
           <Text style={styles.dueDate}>{goal.dueDate}</Text>
         </View>
       </View>
@@ -235,46 +236,46 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'ios' ? 0 : 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerContent: {
-    padding: 24,
+    padding: 20,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#6366F1',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4F46E5',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -283,134 +284,133 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Inter-Bold',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
     textAlign: 'center',
   },
   content: {
     flex: 1,
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginLeft: 8,
   },
-  sectionCount: {
-    fontSize: 14,
+  sectionBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  sectionBadgeText: {
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
   },
   goalCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   goalHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   goalColorIndicator: {
-    width: 4,
-    height: 40,
+    width: 3,
+    height: 32,
     borderRadius: 2,
-    marginRight: 16,
+    marginRight: 12,
   },
   goalInfo: {
     flex: 1,
   },
   goalTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   completedText: {
     textDecorationLine: 'line-through',
     color: '#9CA3AF',
   },
   goalDescription: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   goalProgress: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   progressInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   progressText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Medium',
     color: '#1F2937',
   },
   progressPercentage: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    color: '#6366F1',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
   },
   progressBar: {
-    height: 8,
+    height: 6,
     backgroundColor: '#E5E7EB',
-    borderRadius: 4,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   goalFooter: {
     flexDirection: 'row',
@@ -418,13 +418,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryBadge: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -434,16 +433,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dueDate: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
     marginLeft: 4,
   },
   inspirationSection: {
-    height: 160,
-    borderRadius: 20,
+    height: 120,
+    borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: 20,
     position: 'relative',
   },
   inspirationImage: {
@@ -456,20 +455,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(99, 102, 241, 0.8)',
+    backgroundColor: 'rgba(79, 70, 229, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: 20,
   },
   inspirationTitle: {
-    fontSize: 20,
-    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 6,
+    marginBottom: 4,
   },
   inspirationText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#FFFFFF',
     textAlign: 'center',

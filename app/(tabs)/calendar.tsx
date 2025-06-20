@@ -16,7 +16,7 @@ import {
   Clock,
   MapPin,
   Users,
-  Zap,
+  CheckCircle2,
 } from 'lucide-react-native';
 
 interface Event {
@@ -42,7 +42,7 @@ export default function CalendarScreen() {
       duration: '30 min',
       location: 'Conference Room A',
       attendees: 5,
-      color: '#6366F1',
+      color: '#4F46E5',
       type: 'meeting',
     },
     {
@@ -148,7 +148,7 @@ export default function CalendarScreen() {
               <Text style={styles.headerSubtitle}>{formatDate(selectedDate)}</Text>
             </View>
             <TouchableOpacity style={styles.addButton} activeOpacity={0.8}>
-              <Plus size={20} color="#FFFFFF" strokeWidth={2.5} />
+              <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
             </TouchableOpacity>
           </View>
         </View>
@@ -163,7 +163,7 @@ export default function CalendarScreen() {
               onPress={() => navigateMonth('prev')}
               activeOpacity={0.7}
             >
-              <ChevronLeft size={20} color="#6B7280" strokeWidth={2.5} />
+              <ChevronLeft size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
             
             <Text style={styles.monthTitle}>{formatMonth(currentMonth)}</Text>
@@ -173,7 +173,7 @@ export default function CalendarScreen() {
               onPress={() => navigateMonth('next')}
               activeOpacity={0.7}
             >
-              <ChevronRight size={20} color="#6B7280" strokeWidth={2.5} />
+              <ChevronRight size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -218,11 +218,10 @@ export default function CalendarScreen() {
         {/* Today's Events */}
         <View style={styles.eventsSection}>
           <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Zap size={18} color="#6366F1" strokeWidth={2.5} />
-              <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <View style={styles.sectionBadge}>
+              <Text style={styles.sectionBadgeText}>{events.length}</Text>
             </View>
-            <Text style={styles.eventCount}>{events.length} events</Text>
           </View>
 
           {events.map((event) => (
@@ -238,11 +237,11 @@ function EventCard({ event }: { event: Event }) {
   const getEventIcon = () => {
     switch (event.type) {
       case 'meeting':
-        return <Users size={16} color={event.color} strokeWidth={2.5} />;
+        return <Users size={14} color={event.color} strokeWidth={2} />;
       case 'task':
-        return <Zap size={16} color={event.color} strokeWidth={2.5} />;
+        return <CheckCircle2 size={14} color={event.color} strokeWidth={2} />;
       default:
-        return <CalendarIcon size={16} color={event.color} strokeWidth={2.5} />;
+        return <CalendarIcon size={14} color={event.color} strokeWidth={2} />;
     }
   };
 
@@ -261,20 +260,20 @@ function EventCard({ event }: { event: Event }) {
 
         <View style={styles.eventDetails}>
           <View style={styles.eventDetail}>
-            <Clock size={14} color="#9CA3AF" strokeWidth={2} />
+            <Clock size={12} color="#9CA3AF" strokeWidth={2} />
             <Text style={styles.eventDetailText}>{event.duration}</Text>
           </View>
           
           {event.location && (
             <View style={styles.eventDetail}>
-              <MapPin size={14} color="#9CA3AF" strokeWidth={2} />
+              <MapPin size={12} color="#9CA3AF" strokeWidth={2} />
               <Text style={styles.eventDetailText}>{event.location}</Text>
             </View>
           )}
           
           {event.attendees && (
             <View style={styles.eventDetail}>
-              <Users size={14} color="#9CA3AF" strokeWidth={2} />
+              <Users size={12} color="#9CA3AF" strokeWidth={2} />
               <Text style={styles.eventDetailText}>{event.attendees} people</Text>
             </View>
           )}
@@ -292,16 +291,16 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'ios' ? 0 : 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerContent: {
-    padding: 24,
+    padding: 20,
   },
   headerTop: {
     flexDirection: 'row',
@@ -309,74 +308,76 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontFamily: 'Inter-Bold',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#6366F1',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#4F46E5',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: 20,
   },
   calendarContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 24,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   navButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
   monthTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
   },
   weekDaysContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   weekDay: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   calendarGrid: {
     flexDirection: 'row',
@@ -387,8 +388,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 4,
+    borderRadius: 6,
+    marginBottom: 2,
   },
   emptyCell: {
     opacity: 0,
@@ -397,73 +398,72 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
   },
   selectedCell: {
-    backgroundColor: '#6366F1',
+    backgroundColor: '#4F46E5',
   },
   dayText: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter-Medium',
     color: '#1F2937',
   },
   todayText: {
-    color: '#6366F1',
-    fontFamily: 'Inter-Bold',
+    color: '#4F46E5',
+    fontFamily: 'Inter-SemiBold',
   },
   selectedText: {
     color: '#FFFFFF',
-    fontFamily: 'Inter-Bold',
+    fontFamily: 'Inter-SemiBold',
   },
   eventsSection: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginLeft: 8,
   },
-  eventCount: {
-    fontSize: 14,
+  sectionBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  sectionBadgeText: {
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
   },
   eventCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: 12,
+    marginBottom: 8,
     flexDirection: 'row',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   eventColorBar: {
-    width: 4,
+    width: 3,
   },
   eventContent: {
     flex: 1,
-    padding: 16,
+    padding: 12,
   },
   eventHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   eventTitleContainer: {
     flexDirection: 'row',
@@ -471,30 +471,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginLeft: 8,
+    marginLeft: 6,
     flex: 1,
   },
   eventTime: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    color: '#6366F1',
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
   },
   eventDetails: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 12,
   },
   eventDetail: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   eventDetailText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
-    marginLeft: 4,
+    marginLeft: 3,
   },
 });
