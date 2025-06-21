@@ -458,7 +458,7 @@ function TaskCard({
 
               {task.isComplex && (
                 <View style={styles.complexBadge}>
-                  <Target size={10} color="#06B6D4" strokeWidth={2} />
+                  <Target size={10} color="#7C3AED" strokeWidth={2} />
                   <Text style={styles.complexBadgeText}>Complex</Text>
                 </View>
               )}
@@ -640,13 +640,13 @@ const styles = StyleSheet.create({
   },
   complexTaskButton: {
     flex: 1,
-    backgroundColor: '#06B6D4',
+    backgroundColor: '#7C3AED',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: '#06B6D4',
+    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   complexBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E0F7FA',
+    backgroundColor: '#F3E8FF',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
   complexBadgeText: {
     fontSize: 10,
     fontFamily: 'Inter-SemiBold',
-    color: '#06B6D4',
+    color: '#7C3AED',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
