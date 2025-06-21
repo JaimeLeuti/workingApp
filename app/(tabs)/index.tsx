@@ -66,6 +66,38 @@ export default function TodayScreen() {
     return tasks.filter(task => task.dateKey === dateKey);
   };
 
+  // Enhanced progress calculation that includes subtasks
+  const calculateProgress = () => {
+    const currentTasks = getCurrentDateTasks();
+    if (currentTasks.length === 0) return { completed: 0, total: 0, percentage: 0 };
+
+    let totalProgress = 0;
+    let completedProgress = 0;
+
+    currentTasks.forEach(task => {
+      if (task.subtasks && task.subtasks.length > 0) {
+        // For tasks with subtasks, each subtask contributes to the task's completion
+        const completedSubtasks = task.subtasks.filter(subtask => subtask.completed).length;
+        const taskProgress = completedSubtasks / task.subtasks.length;
+        
+        totalProgress += 1;
+        completedProgress += taskProgress;
+      } else {
+        // For simple tasks, it's either 0 or 1
+        totalProgress += 1;
+        completedProgress += task.completed ? 1 : 0;
+      }
+    });
+
+    const percentage = totalProgress > 0 ? (completedProgress / totalProgress) * 100 : 0;
+    
+    return {
+      completed: Math.round(completedProgress * 10) / 10, // Round to 1 decimal place
+      total: totalProgress,
+      percentage: Math.round(percentage)
+    };
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
     if (direction === 'prev') {
@@ -122,26 +154,50 @@ export default function TodayScreen() {
 
   const toggleTask = (taskId: string) => {
     setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
+      prev.map(task => {
+        if (task.id === taskId) {
+          const newCompleted = !task.completed;
+          
+          // If the task has subtasks, mark all subtasks as completed/uncompleted
+          if (task.subtasks && task.subtasks.length > 0) {
+            return {
+              ...task,
+              completed: newCompleted,
+              subtasks: task.subtasks.map(subtask => ({
+                ...subtask,
+                completed: newCompleted
+              }))
+            };
+          }
+          
+          return { ...task, completed: newCompleted };
+        }
+        return task;
+      })
     );
   };
 
   const toggleSubtask = (taskId: string, subtaskId: string) => {
     setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId
-          ? {
-              ...task,
-              subtasks: task.subtasks?.map(subtask =>
-                subtask.id === subtaskId
-                  ? { ...subtask, completed: !subtask.completed }
-                  : subtask
-              ),
-            }
-          : task
-      )
+      prev.map(task => {
+        if (task.id === taskId && task.subtasks) {
+          const updatedSubtasks = task.subtasks.map(subtask =>
+            subtask.id === subtaskId
+              ? { ...subtask, completed: !subtask.completed }
+              : subtask
+          );
+          
+          // Check if all subtasks are completed to mark the main task as completed
+          const allSubtasksCompleted = updatedSubtasks.every(subtask => subtask.completed);
+          
+          return {
+            ...task,
+            subtasks: updatedSubtasks,
+            completed: allSubtasksCompleted
+          };
+        }
+        return task;
+      })
     );
   };
 
@@ -158,8 +214,7 @@ export default function TodayScreen() {
   };
 
   const currentDateTasks = getCurrentDateTasks();
-  const completedTasks = currentDateTasks.filter(task => task.completed).length;
-  const totalTasks = currentDateTasks.length;
+  const progress = calculateProgress();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -195,8 +250,8 @@ export default function TodayScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Progress Card */}
-          {totalTasks > 0 && (
+          {/* Enhanced Progress Card */}
+          {progress.total > 0 && (
             <View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <View style={styles.progressIconContainer}>
@@ -205,11 +260,11 @@ export default function TodayScreen() {
                 <View style={styles.progressTextContainer}>
                   <Text style={styles.progressTitle}>Progress</Text>
                   <Text style={styles.progressSubtitle}>
-                    {completedTasks} of {totalTasks} completed
+                    {progress.completed} of {progress.total} completed
                   </Text>
                 </View>
                 <Text style={styles.progressPercentage}>
-                  {Math.round((completedTasks / totalTasks) * 100)}%
+                  {progress.percentage}%
                 </Text>
               </View>
               <View style={styles.progressBarContainer}>
@@ -217,7 +272,7 @@ export default function TodayScreen() {
                   <View 
                     style={[
                       styles.progressFill, 
-                      { width: `${(completedTasks / totalTasks) * 100}%` }
+                      { width: `${progress.percentage}%` }
                     ]} 
                   />
                 </View>
@@ -345,6 +400,16 @@ function TaskCard({
   const completedSubtasks = task.subtasks?.filter(subtask => subtask.completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
+  // Calculate task progress for display
+  const getTaskProgress = () => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return task.completed ? 100 : 0;
+    }
+    return Math.round((completedSubtasks / totalSubtasks) * 100);
+  };
+
+  const taskProgress = getTaskProgress();
+
   return (
     <View style={styles.taskCard}>
       <TouchableOpacity
@@ -400,12 +465,25 @@ function TaskCard({
             </View>
           )}
 
-          {/* Subtasks */}
+          {/* Subtasks with Progress */}
           {task.subtasks && task.subtasks.length > 0 && (
             <View style={styles.subtasksContainer}>
-              <Text style={styles.subtasksHeader}>
-                Subtasks ({completedSubtasks}/{totalSubtasks})
-              </Text>
+              <View style={styles.subtasksHeaderContainer}>
+                <Text style={styles.subtasksHeader}>
+                  Subtasks ({completedSubtasks}/{totalSubtasks})
+                </Text>
+                <View style={styles.subtaskProgressContainer}>
+                  <Text style={styles.subtaskProgressText}>{taskProgress}%</Text>
+                  <View style={styles.subtaskProgressBar}>
+                    <View 
+                      style={[
+                        styles.subtaskProgressFill, 
+                        { width: `${taskProgress}%` }
+                      ]} 
+                    />
+                  </View>
+                </View>
+              </View>
               {task.subtasks.map((subtask) => (
                 <TouchableOpacity
                   key={subtask.id}
@@ -775,11 +853,39 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
+  subtasksHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   subtasksHeader: {
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
-    marginBottom: 6,
+  },
+  subtaskProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  subtaskProgressText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#10B981',
+    minWidth: 28,
+  },
+  subtaskProgressBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  subtaskProgressFill: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 2,
   },
   subtaskItem: {
     flexDirection: 'row',
