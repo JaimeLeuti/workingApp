@@ -9,21 +9,35 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2 } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target } from 'lucide-react-native';
+import ComplexTaskForm from '@/components/ComplexTaskForm';
+
+interface Subtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
 
 interface Task {
   id: string;
   title: string;
+  description?: string;
   completed: boolean;
   dateKey: string;
+  subtasks?: Subtask[];
+  startTime?: Date;
+  duration?: number;
+  isComplex?: boolean;
 }
 
 export default function TodayScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showAddInput, setShowAddInput] = useState(false);
+  const [showSimpleInput, setShowSimpleInput] = useState(false);
+  const [showComplexForm, setShowComplexForm] = useState(false);
 
   const formatDate = (date: Date) => {
     const today = new Date();
@@ -60,11 +74,11 @@ export default function TodayScreen() {
       newDate.setDate(newDate.getDate() + 1);
     }
     setCurrentDate(newDate);
-    setShowAddInput(false);
+    setShowSimpleInput(false);
     setNewTaskTitle('');
   };
 
-  const addTask = () => {
+  const addSimpleTask = () => {
     if (!newTaskTitle.trim()) {
       Alert.alert('Error', 'Please enter a task title');
       return;
@@ -75,11 +89,35 @@ export default function TodayScreen() {
       title: newTaskTitle.trim(),
       completed: false,
       dateKey: getDateKey(currentDate),
+      isComplex: false,
     };
 
     setTasks(prev => [...prev, newTask]);
     setNewTaskTitle('');
-    setShowAddInput(false);
+    setShowSimpleInput(false);
+  };
+
+  const addComplexTask = (taskData: {
+    title: string;
+    description: string;
+    subtasks: Subtask[];
+    startTime: Date | null;
+    duration: number;
+  }) => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      title: taskData.title,
+      description: taskData.description || undefined,
+      completed: false,
+      dateKey: getDateKey(currentDate),
+      subtasks: taskData.subtasks,
+      startTime: taskData.startTime || undefined,
+      duration: taskData.duration || undefined,
+      isComplex: true,
+    };
+
+    setTasks(prev => [...prev, newTask]);
+    setShowComplexForm(false);
   };
 
   const toggleTask = (taskId: string) => {
@@ -90,8 +128,33 @@ export default function TodayScreen() {
     );
   };
 
+  const toggleSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks?.map(subtask =>
+                subtask.id === subtaskId
+                  ? { ...subtask, completed: !subtask.completed }
+                  : subtask
+              ),
+            }
+          : task
+      )
+    );
+  };
+
   const deleteTask = (taskId: string) => {
     setTasks(prev => prev.filter(task => task.id !== taskId));
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
   };
 
   const currentDateTasks = getCurrentDateTasks();
@@ -168,15 +231,26 @@ export default function TodayScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Add Task Section */}
         <View style={styles.addSection}>
-          {!showAddInput ? (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setShowAddInput(true)}
-              activeOpacity={0.8}
-            >
-              <Plus size={18} color="#FFFFFF" strokeWidth={2.5} />
-              <Text style={styles.addButtonText}>Add new task</Text>
-            </TouchableOpacity>
+          {!showSimpleInput ? (
+            <View style={styles.addButtonsContainer}>
+              <TouchableOpacity
+                style={styles.complexTaskButton}
+                onPress={() => setShowComplexForm(true)}
+                activeOpacity={0.8}
+              >
+                <Target size={16} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={styles.complexTaskButtonText}>Complex Task</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.simpleTaskButton}
+                onPress={() => setShowSimpleInput(true)}
+                activeOpacity={0.8}
+              >
+                <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
+                <Text style={styles.simpleTaskButtonText}>Simple Task</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={styles.addInputCard}>
               <TextInput
@@ -186,7 +260,7 @@ export default function TodayScreen() {
                 value={newTaskTitle}
                 onChangeText={setNewTaskTitle}
                 autoFocus
-                onSubmitEditing={addTask}
+                onSubmitEditing={addSimpleTask}
                 returnKeyType="done"
                 multiline
               />
@@ -194,7 +268,7 @@ export default function TodayScreen() {
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => {
-                    setShowAddInput(false);
+                    setShowSimpleInput(false);
                     setNewTaskTitle('');
                   }}
                   activeOpacity={0.7}
@@ -203,7 +277,7 @@ export default function TodayScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.saveButton}
-                  onPress={addTask}
+                  onPress={addSimpleTask}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.saveButtonText}>Add task</Text>
@@ -227,44 +301,147 @@ export default function TodayScreen() {
         ) : (
           <View style={styles.tasksList}>
             {currentDateTasks.map((task) => (
-              <View key={task.id} style={styles.taskCard}>
-                <TouchableOpacity
-                  style={styles.taskContent}
-                  onPress={() => toggleTask(task.id)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.checkboxContainer}>
-                    <View style={[
-                      styles.checkbox,
-                      task.completed && styles.checkboxCompleted
-                    ]}>
-                      {task.completed && (
-                        <Check size={14} color="#FFFFFF" strokeWidth={2.5} />
-                      )}
-                    </View>
-                  </View>
-
-                  <Text style={[
-                    styles.taskTitle,
-                    task.completed && styles.taskTitleCompleted
-                  ]}>
-                    {task.title}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteTask(task.id)}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={16} color="#EF4444" strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
+              <TaskCard
+                key={task.id}
+                task={task}
+                onToggle={() => toggleTask(task.id)}
+                onToggleSubtask={(subtaskId) => toggleSubtask(task.id, subtaskId)}
+                onDelete={() => deleteTask(task.id)}
+                formatTime={formatTime}
+              />
             ))}
           </View>
         )}
       </ScrollView>
+
+      {/* Complex Task Form Modal */}
+      <Modal
+        visible={showComplexForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <ComplexTaskForm
+          onSave={addComplexTask}
+          onCancel={() => setShowComplexForm(false)}
+        />
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function TaskCard({ 
+  task, 
+  onToggle, 
+  onToggleSubtask, 
+  onDelete, 
+  formatTime 
+}: { 
+  task: Task; 
+  onToggle: () => void; 
+  onToggleSubtask: (subtaskId: string) => void;
+  onDelete: () => void;
+  formatTime: (date: Date) => string;
+}) {
+  const completedSubtasks = task.subtasks?.filter(subtask => subtask.completed).length || 0;
+  const totalSubtasks = task.subtasks?.length || 0;
+
+  return (
+    <View style={styles.taskCard}>
+      <TouchableOpacity
+        style={styles.taskContent}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <View style={styles.checkboxContainer}>
+          <View style={[
+            styles.checkbox,
+            task.completed && styles.checkboxCompleted
+          ]}>
+            {task.completed && (
+              <Check size={14} color="#FFFFFF" strokeWidth={2.5} />
+            )}
+          </View>
+        </View>
+
+        <View style={styles.taskInfo}>
+          <Text style={[
+            styles.taskTitle,
+            task.completed && styles.taskTitleCompleted
+          ]}>
+            {task.title}
+          </Text>
+          
+          {task.description && (
+            <Text style={styles.taskDescription}>{task.description}</Text>
+          )}
+
+          {/* Task Meta Info */}
+          {(task.startTime || task.duration || task.isComplex) && (
+            <View style={styles.taskMeta}>
+              {task.startTime && (
+                <View style={styles.metaItem}>
+                  <Clock size={12} color="#6B7280" strokeWidth={2} />
+                  <Text style={styles.metaText}>{formatTime(task.startTime)}</Text>
+                </View>
+              )}
+              
+              {task.duration && (
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaText}>{task.duration}min</Text>
+                </View>
+              )}
+
+              {task.isComplex && (
+                <View style={styles.complexBadge}>
+                  <Target size={10} color="#8B5CF6" strokeWidth={2} />
+                  <Text style={styles.complexBadgeText}>Complex</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Subtasks */}
+          {task.subtasks && task.subtasks.length > 0 && (
+            <View style={styles.subtasksContainer}>
+              <Text style={styles.subtasksHeader}>
+                Subtasks ({completedSubtasks}/{totalSubtasks})
+              </Text>
+              {task.subtasks.map((subtask) => (
+                <TouchableOpacity
+                  key={subtask.id}
+                  style={styles.subtaskItem}
+                  onPress={() => onToggleSubtask(subtask.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.subtaskCheckbox,
+                    subtask.completed && styles.subtaskCheckboxCompleted
+                  ]}>
+                    {subtask.completed && (
+                      <Check size={10} color="#FFFFFF" strokeWidth={2.5} />
+                    )}
+                  </View>
+                  <Text style={[
+                    styles.subtaskTitle,
+                    subtask.completed && styles.subtaskTitleCompleted
+                  ]}>
+                    {subtask.title}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={onDelete}
+        activeOpacity={0.7}
+      >
+        <Trash2 size={16} color="#EF4444" strokeWidth={2} />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -379,7 +556,32 @@ const styles = StyleSheet.create({
   addSection: {
     marginBottom: 24,
   },
-  addButton: {
+  addButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  complexTaskButton: {
+    flex: 1,
+    backgroundColor: '#8B5CF6',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  complexTaskButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+    marginLeft: 6,
+  },
+  simpleTaskButton: {
+    flex: 1,
     backgroundColor: '#4F46E5',
     flexDirection: 'row',
     alignItems: 'center',
@@ -392,11 +594,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  addButtonText: {
-    fontSize: 15,
+  simpleTaskButtonText: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   addInputCard: {
     backgroundColor: '#FFFFFF',
@@ -481,7 +683,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -493,10 +695,11 @@ const styles = StyleSheet.create({
   taskContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   checkboxContainer: {
     marginRight: 12,
+    marginTop: 2,
   },
   checkbox: {
     width: 20,
@@ -512,14 +715,99 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderColor: '#10B981',
   },
-  taskTitle: {
+  taskInfo: {
     flex: 1,
+  },
+  taskTitle: {
     fontSize: 15,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
     lineHeight: 20,
+    marginBottom: 2,
   },
   taskTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: '#9CA3AF',
+  },
+  taskDescription: {
+    fontSize: 13,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  taskMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  metaText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  complexBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3E8FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
+  },
+  complexBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#8B5CF6',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  subtasksContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  subtasksHeader: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  subtaskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  subtaskCheckbox: {
+    width: 14,
+    height: 14,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    marginRight: 8,
+  },
+  subtaskCheckboxCompleted: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  subtaskTitle: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#374151',
+    flex: 1,
+  },
+  subtaskTitleCompleted: {
     textDecorationLine: 'line-through',
     color: '#9CA3AF',
   },
