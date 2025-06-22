@@ -9,8 +9,9 @@ import {
   Alert,
   Platform,
   SafeAreaView,
+  Modal,
 } from 'react-native';
-import { X, Target, SquareCheck as CheckSquare, Calendar, Plus, Trash2 } from 'lucide-react-native';
+import { X, Target, SquareCheck as CheckSquare, Calendar, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
 
 interface Goal {
   id: string;
@@ -68,6 +69,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
   const [selectedCategory, setSelectedCategory] = useState(goal?.category || DEFAULT_CATEGORIES[0].name);
   const [customCategory, setCustomCategory] = useState(goal?.customCategory || '');
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Get available categories (default + custom)
   const [customCategories, setCustomCategories] = useState<Array<{name: string, color: string}>>([]);
@@ -116,11 +118,9 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
     });
   };
 
-  const handleDateSelect = () => {
-    // For now, set a default date. In a real app, you'd open a date picker
-    const futureDate = new Date();
-    futureDate.setMonth(futureDate.getMonth() + 3); // 3 months from now
-    setDeadline(futureDate);
+  const handleDateSelect = (selectedDate: Date) => {
+    setDeadline(selectedDate);
+    setShowDatePicker(false);
   };
 
   const clearDeadline = () => {
@@ -375,7 +375,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
           ) : (
             <TouchableOpacity
               style={styles.deadlineButton}
-              onPress={handleDateSelect}
+              onPress={() => setShowDatePicker(true)}
               activeOpacity={0.7}
             >
               <Calendar size={16} color="#6B7280" strokeWidth={2} />
@@ -463,7 +463,230 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Date Picker Modal */}
+      <DatePickerModal
+        visible={showDatePicker}
+        onClose={() => setShowDatePicker(false)}
+        onDateSelect={handleDateSelect}
+        currentDate={deadline}
+      />
     </SafeAreaView>
+  );
+}
+
+function DatePickerModal({ 
+  visible, 
+  onClose, 
+  onDateSelect, 
+  currentDate 
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onDateSelect: (date: Date) => void;
+  currentDate: Date | null;
+}) {
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(currentDate || today);
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(currentDate?.getFullYear() || today.getFullYear(), currentDate?.getMonth() || today.getMonth(), 1)
+  );
+
+  const formatMonth = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(currentMonth);
+    if (direction === 'prev') {
+      newMonth.setMonth(newMonth.getMonth() - 1);
+    } else {
+      newMonth.setMonth(newMonth.getMonth() + 1);
+    }
+    setCurrentMonth(newMonth);
+  };
+
+  const isToday = (date: Date | null) => {
+    if (!date) return false;
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isSelected = (date: Date | null) => {
+    if (!date) return false;
+    return date.toDateString() === selectedDate.toDateString();
+  };
+
+  const isPastDate = (date: Date | null) => {
+    if (!date) return false;
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return dateOnly < todayOnly;
+  };
+
+  const handleDatePress = (date: Date) => {
+    setSelectedDate(date);
+  };
+
+  const handleConfirm = () => {
+    onDateSelect(selectedDate);
+  };
+
+  const goToToday = () => {
+    const todayDate = new Date();
+    setSelectedDate(todayDate);
+    setCurrentMonth(new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
+  };
+
+  const days = getDaysInMonth(currentMonth);
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.datePickerContainer}>
+          {/* Header */}
+          <View style={styles.datePickerHeader}>
+            <Text style={styles.datePickerTitle}>Select Deadline</Text>
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+              <X size={20} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Calendar Navigation */}
+          <View style={styles.calendarHeader}>
+            <TouchableOpacity 
+              style={styles.navButton}
+              onPress={() => navigateMonth('prev')}
+              activeOpacity={0.7}
+            >
+              <ChevronLeft size={18} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+            
+            <Text style={styles.monthTitle}>{formatMonth(currentMonth)}</Text>
+            
+            <TouchableOpacity 
+              style={styles.navButton}
+              onPress={() => navigateMonth('next')}
+              activeOpacity={0.7}
+            >
+              <ChevronRight size={18} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity 
+              style={styles.todayButton}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.todayButtonText}>Go to Today</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Week Days Header */}
+          <View style={styles.weekDaysContainer}>
+            {weekDays.map((day) => (
+              <Text key={day} style={styles.weekDay}>
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          {/* Calendar Grid */}
+          <View style={styles.calendarGrid}>
+            {days.map((date, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.dayCell,
+                  !date && styles.emptyCell,
+                  isToday(date) && styles.todayCell,
+                  isSelected(date) && styles.selectedCell,
+                  isPastDate(date) && styles.pastDateCell,
+                ]}
+                onPress={() => date && !isPastDate(date) && handleDatePress(date)}
+                disabled={!date || isPastDate(date)}
+                activeOpacity={0.7}
+              >
+                {date && (
+                  <Text style={[
+                    styles.dayText,
+                    isToday(date) && styles.todayText,
+                    isSelected(date) && styles.selectedText,
+                    isPastDate(date) && styles.pastDateText,
+                  ]}>
+                    {date.getDate()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Selected Date Display */}
+          <View style={styles.selectedDateContainer}>
+            <Text style={styles.selectedDateLabel}>Selected Deadline</Text>
+            <Text style={styles.selectedDateText}>
+              {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </Text>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.datePickerActions}>
+            <TouchableOpacity
+              style={styles.datePickerCancelButton}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.datePickerCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.datePickerConfirmButton}
+              onPress={handleConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.datePickerConfirmText}>Set Deadline</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -711,6 +934,188 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
+  },
+  // Date Picker Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  datePickerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  monthTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+  },
+  quickActions: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  todayButton: {
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  todayButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  weekDay: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    paddingVertical: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  emptyCell: {
+    opacity: 0,
+  },
+  todayCell: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  selectedCell: {
+    backgroundColor: '#4F46E5',
+  },
+  pastDateCell: {
+    opacity: 0.3,
+  },
+  dayText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#1F2937',
+  },
+  todayText: {
+    color: '#F59E0B',
+    fontFamily: 'Inter-SemiBold',
+  },
+  selectedText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+  pastDateText: {
+    color: '#9CA3AF',
+  },
+  selectedDateContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  selectedDateLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  selectedDateText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+  },
+  datePickerActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  datePickerCancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  datePickerCancelText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  datePickerConfirmButton: {
+    flex: 1,
+    backgroundColor: '#4F46E5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  datePickerConfirmText: {
+    fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
