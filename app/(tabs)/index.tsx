@@ -320,7 +320,6 @@ export default function TodayScreen() {
                   day: 'numeric'
                 })}
               </Text>
-              <Calendar size={16} color="#9CA3AF" strokeWidth={2} style={styles.calendarIcon} />
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -680,7 +679,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    position: 'relative',
   },
   dateText: {
     fontSize: 24,
@@ -692,11 +690,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
-  },
-  calendarIcon: {
-    position: 'absolute',
-    top: 8,
-    right: 12,
   },
   todayButton: {
     flexDirection: 'row',
