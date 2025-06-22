@@ -33,12 +33,16 @@ interface Task {
   order: number; // Add order field for consistent sorting
 }
 
+// Define modal states as an enum for better type safety
+type ModalState = 'none' | 'simple' | 'complex';
+
 export default function TodayScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showSimpleInput, setShowSimpleInput] = useState(false);
-  const [showComplexForm, setShowComplexForm] = useState(false);
+  
+  // Use a single state to manage which modal is open
+  const [modalState, setModalState] = useState<ModalState>('none');
 
   const formatDate = (date: Date) => {
     const today = new Date();
@@ -109,8 +113,8 @@ export default function TodayScreen() {
       newDate.setDate(newDate.getDate() + 1);
     }
     setCurrentDate(newDate);
-    // Reset input states when navigating dates
-    setShowSimpleInput(false);
+    // Reset all modal states when navigating dates
+    setModalState('none');
     setNewTaskTitle('');
   };
 
@@ -119,35 +123,18 @@ export default function TodayScreen() {
     return currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.order)) + 1 : 0;
   };
 
-  // Fixed: Properly handle opening complex form
-  const handleOpenComplexForm = () => {
-    // First, ensure simple input is closed
-    setShowSimpleInput(false);
+  // Simplified modal handlers
+  const openSimpleTaskInput = () => {
+    setModalState('simple');
     setNewTaskTitle('');
-    // Then open complex form after a brief delay to ensure state is clean
-    setTimeout(() => {
-      setShowComplexForm(true);
-    }, 100);
   };
 
-  // Fixed: Properly handle opening simple input
-  const handleOpenSimpleInput = () => {
-    // First, ensure complex form is closed
-    setShowComplexForm(false);
-    // Then open simple input after a brief delay to ensure state is clean
-    setTimeout(() => {
-      setShowSimpleInput(true);
-    }, 100);
+  const openComplexTaskForm = () => {
+    setModalState('complex');
   };
 
-  // Fixed: Properly handle canceling complex form
-  const handleCancelComplexForm = () => {
-    setShowComplexForm(false);
-  };
-
-  // Fixed: Properly handle canceling simple input
-  const handleCancelSimpleInput = () => {
-    setShowSimpleInput(false);
+  const closeAllModals = () => {
+    setModalState('none');
     setNewTaskTitle('');
   };
 
@@ -168,7 +155,7 @@ export default function TodayScreen() {
 
     setTasks(prev => [...prev, newTask]);
     setNewTaskTitle('');
-    setShowSimpleInput(false);
+    setModalState('none');
   };
 
   const addComplexTask = (taskData: {
@@ -192,7 +179,7 @@ export default function TodayScreen() {
     };
 
     setTasks(prev => [...prev, newTask]);
-    setShowComplexForm(false);
+    setModalState('none');
   };
 
   const toggleTask = (taskId: string) => {
@@ -355,11 +342,11 @@ export default function TodayScreen() {
       <View style={styles.content}>
         {/* Add Task Section */}
         <View style={styles.addSection}>
-          {!showSimpleInput ? (
+          {modalState === 'none' ? (
             <View style={styles.addButtonsContainer}>
               <TouchableOpacity
                 style={styles.complexTaskButton}
-                onPress={handleOpenComplexForm}
+                onPress={openComplexTaskForm}
                 activeOpacity={0.8}
               >
                 <Target size={16} color="#FFFFFF" strokeWidth={2.5} />
@@ -368,14 +355,14 @@ export default function TodayScreen() {
               
               <TouchableOpacity
                 style={styles.simpleTaskButton}
-                onPress={handleOpenSimpleInput}
+                onPress={openSimpleTaskInput}
                 activeOpacity={0.8}
               >
                 <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
                 <Text style={styles.simpleTaskButtonText}>Simple Task</Text>
               </TouchableOpacity>
             </View>
-          ) : (
+          ) : modalState === 'simple' ? (
             <View style={styles.addInputCard}>
               <TextInput
                 style={styles.addInput}
@@ -391,7 +378,7 @@ export default function TodayScreen() {
               <View style={styles.addInputActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
-                  onPress={handleCancelSimpleInput}
+                  onPress={closeAllModals}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -405,7 +392,7 @@ export default function TodayScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* Tasks List */}
@@ -431,16 +418,17 @@ export default function TodayScreen() {
         )}
       </View>
 
-      {/* Complex Task Form Modal - Fixed: Better modal handling */}
+      {/* Complex Task Form Modal - Fixed with proper key and state management */}
       <Modal
-        visible={showComplexForm}
+        key={`complex-modal-${modalState}`} // Add key to force re-render
+        visible={modalState === 'complex'}
         animationType="slide"
         presentationStyle="fullScreen"
-        onRequestClose={handleCancelComplexForm}
+        onRequestClose={closeAllModals}
       >
         <ComplexTaskForm
           onSave={addComplexTask}
-          onCancel={handleCancelComplexForm}
+          onCancel={closeAllModals}
         />
       </Modal>
     </SafeAreaView>
