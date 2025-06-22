@@ -420,10 +420,63 @@ function GoalCard({
   };
 
   const getDaysUntilDeadline = (deadline: Date) => {
+    // Get current date at start of day (midnight)
     const today = new Date();
-    const diffTime = deadline.getTime() - today.getTime();
+    today.setHours(0, 0, 0, 0);
+    
+    // Get deadline date at start of day (midnight)
+    const deadlineDate = new Date(deadline);
+    deadlineDate.setHours(0, 0, 0, 0);
+    
+    // Calculate difference in milliseconds
+    const diffTime = deadlineDate.getTime() - today.getTime();
+    
+    // Convert to days and round
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
     return diffDays;
+  };
+
+  const getDaysLeftDisplay = (deadline: Date) => {
+    const daysLeft = getDaysUntilDeadline(deadline);
+    
+    if (daysLeft < 0) {
+      const overdueDays = Math.abs(daysLeft);
+      return {
+        text: `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`,
+        color: '#DC2626', // Red for overdue
+        bgColor: '#FEE2E2',
+        urgent: true
+      };
+    } else if (daysLeft === 0) {
+      return {
+        text: 'Due today',
+        color: '#D97706', // Orange for today
+        bgColor: '#FEF3C7',
+        urgent: true
+      };
+    } else if (daysLeft === 1) {
+      return {
+        text: '1 day left',
+        color: '#D97706', // Orange for tomorrow
+        bgColor: '#FEF3C7',
+        urgent: true
+      };
+    } else if (daysLeft <= 7) {
+      return {
+        text: `${daysLeft} days left`,
+        color: '#CA8A04', // Yellow for this week
+        bgColor: '#FEF3C7',
+        urgent: false
+      };
+    } else {
+      return {
+        text: `${daysLeft} days left`,
+        color: '#6B7280', // Gray for future
+        bgColor: '#F3F4F6',
+        urgent: false
+      };
+    }
   };
 
   const timeframeColor = TIMEFRAME_COLORS[goal.timeframe as keyof typeof TIMEFRAME_COLORS];
@@ -573,14 +626,23 @@ function GoalCard({
           <View style={styles.dueDateContainer}>
             <Calendar size={12} color="#9CA3AF" strokeWidth={2} />
             <Text style={styles.dueDate}>{formatDeadline(goal.deadline)}</Text>
-            {!goal.isCompleted && (
-              <View style={styles.daysLeftContainer}>
-                <Clock size={10} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.daysLeftText}>
-                  {getDaysUntilDeadline(goal.deadline)} days left
-                </Text>
-              </View>
-            )}
+            {!goal.isCompleted && (() => {
+              const daysLeftInfo = getDaysLeftDisplay(goal.deadline);
+              return (
+                <View style={[
+                  styles.daysLeftContainer,
+                  { backgroundColor: daysLeftInfo.bgColor }
+                ]}>
+                  <Clock size={10} color={daysLeftInfo.color} strokeWidth={2} />
+                  <Text style={[
+                    styles.daysLeftText,
+                    { color: daysLeftInfo.color }
+                  ]}>
+                    {daysLeftInfo.text}
+                  </Text>
+                </View>
+              );
+            })()}
           </View>
         )}
 
@@ -953,7 +1015,6 @@ const styles = StyleSheet.create({
   daysLeftContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF3C7',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -962,7 +1023,6 @@ const styles = StyleSheet.create({
   daysLeftText: {
     fontSize: 9,
     fontFamily: 'Inter-SemiBold',
-    color: '#92400E',
     marginLeft: 2,
   },
   completedBadge: {
