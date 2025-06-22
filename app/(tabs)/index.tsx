@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, Chrome as Home } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, ArrowLeft } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 import CalendarView from '@/components/CalendarView';
@@ -339,7 +339,7 @@ export default function TodayScreen() {
               onPress={goToToday}
               activeOpacity={0.8}
             >
-              <Home size={14} color="#4F46E5" strokeWidth={2} />
+              <ArrowLeft size={14} color="#4F46E5" strokeWidth={2} />
               <Text style={styles.todayButtonText}>Back to Today</Text>
             </TouchableOpacity>
           )}
@@ -680,10 +680,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     position: 'relative',
   },
   dateText: {
