@@ -25,6 +25,7 @@ interface Goal {
   // For non-quantifiable goals
   contributedHours?: number;
   contributedTasks?: number;
+  estimatedProgress?: number; // Percentage estimation (0-100)
   // Common fields
   deadline?: Date;
   timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
@@ -109,6 +110,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
   // Non-quantifiable goal fields
   const [contributedHours, setContributedHours] = useState(goal?.contributedHours?.toString() || '0');
   const [contributedTasks, setContributedTasks] = useState(goal?.contributedTasks?.toString() || '0');
+  const [estimatedProgress, setEstimatedProgress] = useState(goal?.estimatedProgress?.toString() || '0');
 
   // Common fields
   const [deadline, setDeadline] = useState<Date | null>(goal?.deadline || null);
@@ -252,6 +254,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
     if (goalType === 'non-quantifiable' && isEditing) {
       const hoursNum = parseInt(contributedHours, 10);
       const tasksNum = parseInt(contributedTasks, 10);
+      const estimationNum = parseInt(estimatedProgress, 10);
       
       if (isNaN(hoursNum) || hoursNum < 0) {
         Alert.alert('Error', 'Please enter a valid number of contributed hours');
@@ -260,6 +263,11 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       
       if (isNaN(tasksNum) || tasksNum < 0) {
         Alert.alert('Error', 'Please enter a valid number of contributed tasks');
+        return false;
+      }
+
+      if (isNaN(estimationNum) || estimationNum < 0 || estimationNum > 100) {
+        Alert.alert('Error', 'Please enter a valid progress estimation (0-100%)');
         return false;
       }
     }
@@ -304,13 +312,15 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       goalData.currentProgress = Math.min(progressNum, targetNum);
       goalData.isCompleted = progressNum >= targetNum;
     } else {
-      // For non-quantifiable goals, set contributed hours and tasks
+      // For non-quantifiable goals, set contributed hours, tasks, and estimation
       const hoursNum = isEditing ? parseInt(contributedHours, 10) : 0;
       const tasksNum = isEditing ? parseInt(contributedTasks, 10) : 0;
+      const estimationNum = isEditing ? parseInt(estimatedProgress, 10) : 0;
       
       goalData.contributedHours = hoursNum;
       goalData.contributedTasks = tasksNum;
-      goalData.isCompleted = false; // Will be calculated based on linked tasks later
+      goalData.estimatedProgress = estimationNum;
+      goalData.isCompleted = estimationNum >= 100;
     }
 
     onSave(goalData);
@@ -571,6 +581,18 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                     placeholderTextColor="#9CA3AF"
                     value={contributedTasks}
                     onChangeText={setContributedTasks}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Progress Estimation (%)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="How complete is this goal? (0-100%)"
+                    placeholderTextColor="#9CA3AF"
+                    value={estimatedProgress}
+                    onChangeText={setEstimatedProgress}
                     keyboardType="numeric"
                   />
                 </View>

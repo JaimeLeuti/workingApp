@@ -11,7 +11,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, Clock, TrendingUp, Users } from 'lucide-react-native';
+import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, Clock, TrendingUp, Users, Percent } from 'lucide-react-native';
 import GoalForm from '@/components/GoalForm';
 
 interface Goal {
@@ -26,6 +26,7 @@ interface Goal {
   // For non-quantifiable goals
   contributedHours?: number;
   contributedTasks?: number;
+  estimatedProgress?: number; // Percentage estimation (0-100)
   // Common fields
   deadline?: Date;
   timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
@@ -36,7 +37,7 @@ interface Goal {
   createdAt: Date;
 }
 
-type ModalState = 'none' | 'create' | 'edit' | 'updateProgress';
+type ModalState = 'none' | 'create' | 'edit' | 'updateProgress' | 'updateEstimation';
 
 const TIMEFRAME_COLORS = {
   weekly: '#EF4444',
@@ -73,8 +74,13 @@ export default function GoalsScreen() {
 
   const openProgressUpdateModal = (goal: Goal) => {
     setProgressUpdateGoal(goal);
-    setNewProgressValue(goal.currentProgress?.toString() || '0');
-    setModalState('updateProgress');
+    if (goal.type === 'quantifiable') {
+      setNewProgressValue(goal.currentProgress?.toString() || '0');
+      setModalState('updateProgress');
+    } else {
+      setNewProgressValue(goal.estimatedProgress?.toString() || '0');
+      setModalState('updateEstimation');
+    }
   };
 
   const closeModal = () => {
@@ -128,21 +134,41 @@ export default function GoalsScreen() {
       return;
     }
 
-    if (progressUpdateGoal.targetNumber && newProgress > progressUpdateGoal.targetNumber) {
-      Alert.alert('Error', `Progress cannot exceed target of ${progressUpdateGoal.targetNumber}`);
-      return;
-    }
-
-    setGoals(prev => prev.map(goal => {
-      if (goal.id === progressUpdateGoal.id && goal.type === 'quantifiable' && goal.targetNumber) {
-        return {
-          ...goal,
-          currentProgress: newProgress,
-          isCompleted: newProgress >= goal.targetNumber
-        };
+    if (modalState === 'updateProgress') {
+      // Quantifiable goal progress update
+      if (progressUpdateGoal.targetNumber && newProgress > progressUpdateGoal.targetNumber) {
+        Alert.alert('Error', `Progress cannot exceed target of ${progressUpdateGoal.targetNumber}`);
+        return;
       }
-      return goal;
-    }));
+
+      setGoals(prev => prev.map(goal => {
+        if (goal.id === progressUpdateGoal.id && goal.type === 'quantifiable' && goal.targetNumber) {
+          return {
+            ...goal,
+            currentProgress: newProgress,
+            isCompleted: newProgress >= goal.targetNumber
+          };
+        }
+        return goal;
+      }));
+    } else if (modalState === 'updateEstimation') {
+      // Non-quantifiable goal estimation update
+      if (newProgress > 100) {
+        Alert.alert('Error', 'Progress percentage cannot exceed 100%');
+        return;
+      }
+
+      setGoals(prev => prev.map(goal => {
+        if (goal.id === progressUpdateGoal.id && goal.type === 'non-quantifiable') {
+          return {
+            ...goal,
+            estimatedProgress: newProgress,
+            isCompleted: newProgress >= 100
+          };
+        }
+        return goal;
+      }));
+    }
 
     closeModal();
   };
@@ -282,7 +308,7 @@ export default function GoalsScreen() {
 
       {/* Progress Update Modal */}
       <Modal
-        visible={modalState === 'updateProgress'}
+        visible={modalState === 'updateProgress' || modalState === 'updateEstimation'}
         transparent
         animationType="slide"
         onRequestClose={closeModal}
@@ -290,7 +316,9 @@ export default function GoalsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.progressUpdateContainer}>
             <View style={styles.progressUpdateHeader}>
-              <Text style={styles.progressUpdateTitle}>Update Progress</Text>
+              <Text style={styles.progressUpdateTitle}>
+                {modalState === 'updateProgress' ? 'Update Progress' : 'Update Estimation'}
+              </Text>
               <Text style={styles.progressUpdateSubtitle}>
                 {progressUpdateGoal?.title}
               </Text>
@@ -298,21 +326,30 @@ export default function GoalsScreen() {
 
             <View style={styles.progressUpdateContent}>
               <Text style={styles.progressUpdateLabel}>
-                Current Progress ({progressUpdateGoal?.unit || 'units'})
+                {modalState === 'updateProgress' 
+                  ? `Current Progress (${progressUpdateGoal?.unit || 'units'})`
+                  : 'Estimated Progress (%)'
+                }
               </Text>
               <TextInput
                 style={styles.progressUpdateInput}
                 value={newProgressValue}
                 onChangeText={setNewProgressValue}
                 keyboardType="numeric"
-                placeholder="Enter progress"
+                placeholder={modalState === 'updateProgress' ? 'Enter progress' : 'Enter percentage (0-100)'}
                 placeholderTextColor="#9CA3AF"
                 autoFocus
               />
               
-              {progressUpdateGoal?.targetNumber && (
+              {modalState === 'updateProgress' && progressUpdateGoal?.targetNumber && (
                 <Text style={styles.progressUpdateTarget}>
                   Target: {progressUpdateGoal.targetNumber} {progressUpdateGoal.unit}
+                </Text>
+              )}
+              
+              {modalState === 'updateEstimation' && (
+                <Text style={styles.progressUpdateTarget}>
+                  How much of this goal do you estimate is complete?
                 </Text>
               )}
             </View>
@@ -366,6 +403,7 @@ function GoalCard({
       return {
         contributedHours: goal.contributedHours || 0,
         contributedTasks: goal.contributedTasks || 0,
+        estimatedProgress: goal.estimatedProgress || 0,
         showProgressBar: false
       };
     }
@@ -466,34 +504,61 @@ function GoalCard({
             )}
           </>
         ) : (
-          // Non-Quantifiable Goal Contributions
-          <View style={styles.contributionsContainer}>
-            <View style={styles.contributionItem}>
-              <View style={styles.contributionIconContainer}>
-                <Clock size={16} color="#F59E0B" strokeWidth={2} />
-              </View>
-              <View style={styles.contributionContent}>
-                <Text style={styles.contributionValue}>
-                  {progressData.contributedHours}
+          // Non-Quantifiable Goal Contributions and Estimation
+          <>
+            {/* Compact Contributions Row */}
+            <View style={styles.contributionsRow}>
+              <View style={styles.contributionCompactItem}>
+                <Clock size={12} color="#F59E0B" strokeWidth={2} />
+                <Text style={styles.contributionCompactValue}>
+                  {progressData.contributedHours}h
                 </Text>
-                <Text style={styles.contributionLabel}>Hours Contributed</Text>
+              </View>
+
+              <View style={styles.contributionCompactDivider} />
+
+              <View style={styles.contributionCompactItem}>
+                <Check size={12} color="#10B981" strokeWidth={2} />
+                <Text style={styles.contributionCompactValue}>
+                  {progressData.contributedTasks} tasks
+                </Text>
               </View>
             </View>
 
-            <View style={styles.contributionDivider} />
-
-            <View style={styles.contributionItem}>
-              <View style={styles.contributionIconContainer}>
-                <Check size={16} color="#10B981" strokeWidth={2} />
-              </View>
-              <View style={styles.contributionContent}>
-                <Text style={styles.contributionValue}>
-                  {progressData.contributedTasks}
+            {/* Progress Estimation */}
+            <View style={styles.estimationContainer}>
+              <View style={styles.estimationHeader}>
+                <Text style={styles.estimationLabel}>Estimated Progress</Text>
+                <Text style={styles.estimationPercentage}>
+                  {progressData.estimatedProgress}%
                 </Text>
-                <Text style={styles.contributionLabel}>Tasks Completed</Text>
               </View>
+              
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { 
+                      width: `${Math.min(progressData.estimatedProgress, 100)}%`,
+                      backgroundColor: goal.color 
+                    }
+                  ]} 
+                />
+              </View>
+
+              {/* Update Estimation Button */}
+              {!goal.isCompleted && (
+                <TouchableOpacity
+                  style={styles.updateEstimationButton}
+                  onPress={onUpdateProgress}
+                  activeOpacity={0.7}
+                >
+                  <Percent size={14} color="#4F46E5" strokeWidth={2} />
+                  <Text style={styles.updateEstimationButtonText}>Update Estimation</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+          </>
         )}
       </View>
 
@@ -791,51 +856,71 @@ const styles = StyleSheet.create({
     color: '#4F46E5',
     marginLeft: 4,
   },
-  contributionsContainer: {
+  // Compact Contributions Styles
+  contributionsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  contributionItem: {
+  contributionCompactItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  contributionIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
+  },
+  contributionCompactValue: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginLeft: 4,
+  },
+  contributionCompactDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: 8,
+  },
+  // Estimation Styles
+  estimationContainer: {
+    marginTop: 4,
+  },
+  estimationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginRight: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: 6,
   },
-  contributionContent: {
-    flex: 1,
-  },
-  contributionValue: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    color: '#1F2937',
-    marginBottom: 2,
-  },
-  contributionLabel: {
-    fontSize: 11,
+  estimationLabel: {
+    fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
   },
-  contributionDivider: {
-    width: 1,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 12,
+  estimationPercentage: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
+  },
+  updateEstimationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  updateEstimationButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
+    marginLeft: 4,
   },
   goalFooter: {
     flexDirection: 'row',
