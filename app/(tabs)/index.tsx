@@ -10,9 +10,10 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, Home } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
+import CalendarView from '@/components/CalendarView';
 
 interface Subtask {
   id: string;
@@ -34,7 +35,7 @@ interface Task {
 }
 
 // Define modal states as an enum for better type safety
-type ModalState = 'none' | 'simple' | 'complex';
+type ModalState = 'none' | 'simple' | 'complex' | 'calendar';
 
 export default function TodayScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -118,6 +119,17 @@ export default function TodayScreen() {
     setNewTaskTitle('');
   };
 
+  const goToToday = () => {
+    setCurrentDate(new Date());
+    setModalState('none');
+    setNewTaskTitle('');
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    return currentDate.toDateString() === today.toDateString();
+  };
+
   const getNextOrder = () => {
     const currentTasks = getCurrentDateTasks();
     return currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.order)) + 1 : 0;
@@ -131,6 +143,10 @@ export default function TodayScreen() {
 
   const openComplexTaskForm = () => {
     setModalState('complex');
+  };
+
+  const openCalendarView = () => {
+    setModalState('calendar');
   };
 
   const closeAllModals = () => {
@@ -179,6 +195,11 @@ export default function TodayScreen() {
     };
 
     setTasks(prev => [...prev, newTask]);
+    setModalState('none');
+  };
+
+  const handleDateSelect = (selectedDate: Date) => {
+    setCurrentDate(selectedDate);
     setModalState('none');
   };
 
@@ -286,7 +307,11 @@ export default function TodayScreen() {
               <ChevronLeft size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
             
-            <View style={styles.dateContainer}>
+            <TouchableOpacity 
+              style={styles.dateContainer}
+              onPress={openCalendarView}
+              activeOpacity={0.7}
+            >
               <Text style={styles.dateText}>{formatDate(currentDate)}</Text>
               <Text style={styles.dateSubtext}>
                 {currentDate.toLocaleDateString('en-US', { 
@@ -295,7 +320,8 @@ export default function TodayScreen() {
                   day: 'numeric'
                 })}
               </Text>
-            </View>
+              <Calendar size={16} color="#9CA3AF" strokeWidth={2} style={styles.calendarIcon} />
+            </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.navButton}
@@ -305,6 +331,18 @@ export default function TodayScreen() {
               <ChevronRight size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
           </View>
+
+          {/* Go to Today Button - Only show when not on today */}
+          {!isToday() && (
+            <TouchableOpacity 
+              style={styles.todayButton}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <Home size={14} color="#4F46E5" strokeWidth={2} />
+              <Text style={styles.todayButtonText}>Back to Today</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Enhanced Progress Card */}
           {progress.total > 0 && (
@@ -429,6 +467,20 @@ export default function TodayScreen() {
         <ComplexTaskForm
           onSave={addComplexTask}
           onCancel={closeAllModals}
+        />
+      </Modal>
+
+      {/* Calendar View Modal */}
+      <Modal
+        visible={modalState === 'calendar'}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeAllModals}
+      >
+        <CalendarView
+          selectedDate={currentDate}
+          onDateSelect={handleDateSelect}
+          onClose={closeAllModals}
         />
       </Modal>
     </SafeAreaView>
@@ -626,6 +678,13 @@ const styles = StyleSheet.create({
   dateContainer: {
     alignItems: 'center',
     flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    position: 'relative',
   },
   dateText: {
     fontSize: 24,
@@ -637,6 +696,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
+  },
+  calendarIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 12,
+  },
+  todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginBottom: 16,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  todayButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
+    marginLeft: 4,
   },
   progressCard: {
     backgroundColor: '#F8FAFC',
