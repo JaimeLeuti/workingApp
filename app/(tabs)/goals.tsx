@@ -11,7 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { Target, Plus, ChevronRight, Calendar, Check, Trash2, Edit3, X } from 'lucide-react-native';
+import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, X } from 'lucide-react-native';
 
 interface Goal {
   id: string;
