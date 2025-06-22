@@ -55,35 +55,35 @@ const TIMEFRAME_OPTIONS = [
     label: 'Weekly', 
     description: 'Complete within this week',
     color: '#EF4444',
-    icon: '📅'
+    icon: Calendar
   },
   { 
     id: 'monthly', 
     label: 'Monthly', 
     description: 'Complete within this month',
     color: '#F59E0B',
-    icon: '🗓️'
+    icon: Calendar
   },
   { 
     id: 'quarterly', 
     label: 'Quarterly', 
     description: 'Complete within 3 months',
     color: '#8B5CF6',
-    icon: '📊'
+    icon: Calendar
   },
   { 
     id: 'yearly', 
     label: 'Yearly', 
     description: 'Complete within this year',
     color: '#06B6D4',
-    icon: '🎯'
+    icon: Calendar
   },
   { 
     id: 'custom', 
     label: 'Custom Date', 
     description: 'Set your own deadline',
     color: '#6B7280',
-    icon: '⚙️'
+    icon: Clock
   },
 ];
 
@@ -307,49 +307,84 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Timeframe Selection - Top Priority */}
+        {/* Goal Title */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Goal Title *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="What do you want to achieve?"
+            placeholderTextColor="#9CA3AF"
+            value={title}
+            onChangeText={setTitle}
+            autoFocus
+          />
+        </View>
+
+        {/* Description */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Description</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Extra notes or personal motivation (optional)"
+            placeholderTextColor="#9CA3AF"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+        </View>
+
+        {/* Timeframe Selection - Now positioned after title and description */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Goal Timeframe *</Text>
           <Text style={styles.helpText}>When do you want to achieve this goal?</Text>
           
           <View style={styles.timeframeContainer}>
-            {TIMEFRAME_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.timeframeOption,
-                  { borderColor: option.color + '40' },
-                  timeframe === option.id && { 
-                    borderColor: option.color,
-                    backgroundColor: option.color + '10'
-                  }
-                ]}
-                onPress={() => handleTimeframeChange(option.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.timeframeHeader}>
-                  <Text style={styles.timeframeIcon}>{option.icon}</Text>
-                  <Text style={[
-                    styles.timeframeLabel,
-                    { color: option.color },
-                    timeframe === option.id && styles.timeframeLabelSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                </View>
-                <Text style={styles.timeframeDescription}>
-                  {option.description}
-                </Text>
-                {timeframe === option.id && deadline && (
-                  <View style={styles.timeframeDeadline}>
-                    <Calendar size={12} color={option.color} strokeWidth={2} />
-                    <Text style={[styles.timeframeDeadlineText, { color: option.color }]}>
-                      Due: {formatDate(deadline)}
+            {TIMEFRAME_OPTIONS.map((option) => {
+              const IconComponent = option.icon;
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.timeframeOption,
+                    { borderColor: option.color + '40' },
+                    timeframe === option.id && { 
+                      borderColor: option.color,
+                      backgroundColor: option.color + '10'
+                    }
+                  ]}
+                  onPress={() => handleTimeframeChange(option.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.timeframeHeader}>
+                    <IconComponent 
+                      size={16} 
+                      color={option.color} 
+                      strokeWidth={2} 
+                    />
+                    <Text style={[
+                      styles.timeframeLabel,
+                      { color: option.color },
+                      timeframe === option.id && styles.timeframeLabelSelected
+                    ]}>
+                      {option.label}
                     </Text>
                   </View>
-                )}
-              </TouchableOpacity>
-            ))}
+                  <Text style={styles.timeframeDescription}>
+                    {option.description}
+                  </Text>
+                  {timeframe === option.id && deadline && (
+                    <View style={styles.timeframeDeadline}>
+                      <Calendar size={12} color={option.color} strokeWidth={2} />
+                      <Text style={[styles.timeframeDeadlineText, { color: option.color }]}>
+                        Due: {formatDate(deadline)}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -383,34 +418,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
             )}
           </View>
         )}
-
-        {/* Goal Title */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Goal Title *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="What do you want to achieve?"
-            placeholderTextColor="#9CA3AF"
-            value={title}
-            onChangeText={setTitle}
-            autoFocus
-          />
-        </View>
-
-        {/* Description */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Extra notes or personal motivation (optional)"
-            placeholderTextColor="#9CA3AF"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-        </View>
 
         {/* Goal Type Selection */}
         <View style={styles.section}>
@@ -957,13 +964,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
-  timeframeIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
   timeframeLabel: {
     fontSize: 15,
     fontFamily: 'Inter-SemiBold',
+    marginLeft: 8,
   },
   timeframeLabelSelected: {
     fontFamily: 'Inter-Bold',
