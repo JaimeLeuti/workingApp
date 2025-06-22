@@ -10,7 +10,7 @@ import {
   Platform,
   SafeAreaView,
 } from 'react-native';
-import { X, Target, CheckSquare, Calendar, Plus, Trash2 } from 'lucide-react-native';
+import { X, Target, SquareCheck as CheckSquare, Calendar, Plus, Trash2 } from 'lucide-react-native';
 
 interface Goal {
   id: string;
