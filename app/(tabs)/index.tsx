@@ -109,6 +109,7 @@ export default function TodayScreen() {
       newDate.setDate(newDate.getDate() + 1);
     }
     setCurrentDate(newDate);
+    // Reset input states when navigating dates
     setShowSimpleInput(false);
     setNewTaskTitle('');
   };
@@ -160,6 +161,38 @@ export default function TodayScreen() {
 
     setTasks(prev => [...prev, newTask]);
     setShowComplexForm(false);
+  };
+
+  // Fixed: Properly handle opening complex form
+  const handleOpenComplexForm = () => {
+    // First, ensure simple input is closed
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
+    // Then open complex form after a brief delay to ensure state is clean
+    setTimeout(() => {
+      setShowComplexForm(true);
+    }, 100);
+  };
+
+  // Fixed: Properly handle opening simple input
+  const handleOpenSimpleInput = () => {
+    // First, ensure complex form is closed
+    setShowComplexForm(false);
+    // Then open simple input after a brief delay to ensure state is clean
+    setTimeout(() => {
+      setShowSimpleInput(true);
+    }, 100);
+  };
+
+  // Fixed: Properly handle canceling complex form
+  const handleCancelComplexForm = () => {
+    setShowComplexForm(false);
+  };
+
+  // Fixed: Properly handle canceling simple input
+  const handleCancelSimpleInput = () => {
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
   };
 
   const toggleTask = (taskId: string) => {
@@ -326,7 +359,7 @@ export default function TodayScreen() {
             <View style={styles.addButtonsContainer}>
               <TouchableOpacity
                 style={styles.complexTaskButton}
-                onPress={() => setShowComplexForm(true)}
+                onPress={handleOpenComplexForm}
                 activeOpacity={0.8}
               >
                 <Target size={16} color="#FFFFFF" strokeWidth={2.5} />
@@ -335,7 +368,7 @@ export default function TodayScreen() {
               
               <TouchableOpacity
                 style={styles.simpleTaskButton}
-                onPress={() => setShowSimpleInput(true)}
+                onPress={handleOpenSimpleInput}
                 activeOpacity={0.8}
               >
                 <Plus size={16} color="#FFFFFF" strokeWidth={2.5} />
@@ -358,10 +391,7 @@ export default function TodayScreen() {
               <View style={styles.addInputActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
-                  onPress={() => {
-                    setShowSimpleInput(false);
-                    setNewTaskTitle('');
-                  }}
+                  onPress={handleCancelSimpleInput}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -401,15 +431,16 @@ export default function TodayScreen() {
         )}
       </View>
 
-      {/* Complex Task Form Modal */}
+      {/* Complex Task Form Modal - Fixed: Better modal handling */}
       <Modal
         visible={showComplexForm}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={handleCancelComplexForm}
       >
         <ComplexTaskForm
           onSave={addComplexTask}
-          onCancel={() => setShowComplexForm(false)}
+          onCancel={handleCancelComplexForm}
         />
       </Modal>
     </SafeAreaView>
