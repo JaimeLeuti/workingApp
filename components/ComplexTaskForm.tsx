@@ -10,7 +10,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { Plus, X, Clock, Calendar, Trash2, ChevronDown } from 'lucide-react-native';
+import { Plus, X, Clock, Calendar, Trash2, ChevronDown, ToggleLeft, ToggleRight } from 'lucide-react-native';
 
 interface Subtask {
   id: string;
@@ -58,17 +58,7 @@ export default function ComplexTaskForm({ onSave, onCancel }: ComplexTaskFormPro
     setSubtasks(prev => prev.filter(subtask => subtask.id !== subtaskId));
   };
 
-  const handleTimeSelection = (hour: number, minute: number, period: 'AM' | 'PM') => {
-    const now = new Date();
-    let adjustedHour = hour;
-    
-    if (period === 'PM' && hour !== 12) {
-      adjustedHour = hour + 12;
-    } else if (period === 'AM' && hour === 12) {
-      adjustedHour = 0;
-    }
-    
-    const selectedTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), adjustedHour, minute);
+  const handleTimeSelection = (selectedTime: Date) => {
     setStartTime(selectedTime);
     setShowTimePicker(false);
   };
@@ -237,8 +227,8 @@ export default function ComplexTaskForm({ onSave, onCancel }: ComplexTaskFormPro
         </TouchableOpacity>
       </View>
 
-      {/* Time Picker Modal */}
-      <TimePickerModal
+      {/* Enhanced Time Picker Modal */}
+      <EnhancedTimePickerModal
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
         onTimeSelect={handleTimeSelection}
@@ -248,7 +238,7 @@ export default function ComplexTaskForm({ onSave, onCancel }: ComplexTaskFormPro
   );
 }
 
-function TimePickerModal({ 
+function EnhancedTimePickerModal({ 
   visible, 
   onClose, 
   onTimeSelect, 
@@ -256,31 +246,98 @@ function TimePickerModal({
 }: {
   visible: boolean;
   onClose: () => void;
-  onTimeSelect: (hour: number, minute: number, period: 'AM' | 'PM') => void;
+  onTimeSelect: (time: Date) => void;
   currentTime: Date | null;
 }) {
-  const [selectedHour, setSelectedHour] = useState(currentTime ? currentTime.getHours() % 12 || 12 : 9);
-  const [selectedMinute, setSelectedMinute] = useState(currentTime ? currentTime.getMinutes() : 0);
-  const [selectedPeriod, setSelectedPeriod] = useState<'AM' | 'PM'>(
-    currentTime ? (currentTime.getHours() >= 12 ? 'PM' : 'AM') : 'AM'
-  );
+  const now = new Date();
+  const [is24Hour, setIs24Hour] = useState(false);
+  const [selectedHour, setSelectedHour] = useState(currentTime ? currentTime.getHours() : now.getHours());
+  const [selectedMinute, setSelectedMinute] = useState(currentTime ? currentTime.getMinutes() : now.getMinutes());
 
-  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  // Generate hours based on 12/24 hour format
+  const hours = is24Hour 
+    ? Array.from({ length: 24 }, (_, i) => i)
+    : Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // Generate minutes in 5-minute intervals
   const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
 
+  const formatHour = (hour: number) => {
+    if (is24Hour) {
+      return hour.toString().padStart(2, '0');
+    } else {
+      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      return displayHour.toString();
+    }
+  };
+
+  const getCurrentPeriod = () => {
+    return selectedHour >= 12 ? 'PM' : 'AM';
+  };
+
+  const handleHourSelect = (hour: number) => {
+    if (!is24Hour && hour === 12) {
+      // Handle 12 AM/PM conversion
+      const currentPeriod = getCurrentPeriod();
+      setSelectedHour(currentPeriod === 'AM' ? 0 : 12);
+    } else if (!is24Hour) {
+      // Convert 12-hour to 24-hour
+      const currentPeriod = getCurrentPeriod();
+      const newHour = currentPeriod === 'PM' && hour !== 12 ? hour + 12 : 
+                     currentPeriod === 'AM' && hour === 12 ? 0 : 
+                     currentPeriod === 'PM' && hour === 12 ? 12 : hour;
+      setSelectedHour(newHour);
+    } else {
+      setSelectedHour(hour);
+    }
+  };
+
+  const togglePeriod = () => {
+    if (!is24Hour) {
+      setSelectedHour(prev => prev >= 12 ? prev - 12 : prev + 12);
+    }
+  };
+
   const handleConfirm = () => {
-    onTimeSelect(selectedHour, selectedMinute, selectedPeriod);
+    const selectedTime = new Date();
+    selectedTime.setHours(selectedHour, selectedMinute, 0, 0);
+    onTimeSelect(selectedTime);
+  };
+
+  const getDisplayTime = () => {
+    const time = new Date();
+    time.setHours(selectedHour, selectedMinute, 0, 0);
+    
+    if (is24Hour) {
+      return time.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    } else {
+      return time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    }
+  };
+
+  const setQuickTime = (hour: number, minute: number = 0) => {
+    setSelectedHour(hour);
+    setSelectedMinute(minute);
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.timePickerContainer}>
+        <View style={styles.enhancedTimePickerContainer}>
+          {/* Header */}
           <View style={styles.timePickerHeader}>
             <Text style={styles.timePickerTitle}>Select Time</Text>
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
@@ -288,36 +345,106 @@ function TimePickerModal({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.timePickerContent}>
+          {/* Format Toggle */}
+          <View style={styles.formatToggleContainer}>
+            <Text style={styles.formatLabel}>12 Hour</Text>
+            <TouchableOpacity
+              style={styles.formatToggle}
+              onPress={() => setIs24Hour(!is24Hour)}
+              activeOpacity={0.7}
+            >
+              {is24Hour ? (
+                <ToggleRight size={24} color="#4F46E5" strokeWidth={2} />
+              ) : (
+                <ToggleLeft size={24} color="#9CA3AF" strokeWidth={2} />
+              )}
+            </TouchableOpacity>
+            <Text style={styles.formatLabel}>24 Hour</Text>
+          </View>
+
+          {/* Quick Time Buttons */}
+          <View style={styles.quickTimeContainer}>
+            <Text style={styles.quickTimeLabel}>Quick Select</Text>
+            <View style={styles.quickTimeButtons}>
+              <TouchableOpacity
+                style={styles.quickTimeButton}
+                onPress={() => setQuickTime(9, 0)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickTimeButtonText}>9:00 AM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickTimeButton}
+                onPress={() => setQuickTime(12, 0)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickTimeButtonText}>12:00 PM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickTimeButton}
+                onPress={() => setQuickTime(14, 0)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickTimeButtonText}>2:00 PM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickTimeButton}
+                onPress={() => setQuickTime(17, 0)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickTimeButtonText}>5:00 PM</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Time Selectors */}
+          <View style={styles.timeSelectorsContainer}>
             {/* Hour Selector */}
             <View style={styles.timeColumn}>
               <Text style={styles.timeColumnLabel}>Hour</Text>
-              <ScrollView style={styles.timeScrollView} showsVerticalScrollIndicator={false}>
-                {hours.map((hour) => (
-                  <TouchableOpacity
-                    key={hour}
-                    style={[
-                      styles.timeOption,
-                      selectedHour === hour && styles.selectedTimeOption
-                    ]}
-                    onPress={() => setSelectedHour(hour)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.timeOptionText,
-                      selectedHour === hour && styles.selectedTimeOptionText
-                    ]}>
-                      {hour.toString().padStart(2, '0')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <ScrollView 
+                style={styles.timeScrollView} 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.timeScrollContent}
+              >
+                {hours.map((hour) => {
+                  const displayHour = is24Hour ? hour : hour;
+                  const isSelected = is24Hour ? 
+                    selectedHour === hour : 
+                    (selectedHour === 0 && hour === 12) ||
+                    (selectedHour > 0 && selectedHour <= 12 && selectedHour === hour) ||
+                    (selectedHour > 12 && selectedHour - 12 === hour);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={hour}
+                      style={[
+                        styles.timeOption,
+                        isSelected && styles.selectedTimeOption
+                      ]}
+                      onPress={() => handleHourSelect(hour)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.timeOptionText,
+                        isSelected && styles.selectedTimeOptionText
+                      ]}>
+                        {formatHour(is24Hour ? hour : hour)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
 
             {/* Minute Selector */}
             <View style={styles.timeColumn}>
               <Text style={styles.timeColumnLabel}>Minute</Text>
-              <ScrollView style={styles.timeScrollView} showsVerticalScrollIndicator={false}>
+              <ScrollView 
+                style={styles.timeScrollView} 
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.timeScrollContent}
+              >
                 {minutes.map((minute) => (
                   <TouchableOpacity
                     key={minute}
@@ -339,37 +466,42 @@ function TimePickerModal({
               </ScrollView>
             </View>
 
-            {/* Period Selector */}
-            <View style={styles.timeColumn}>
-              <Text style={styles.timeColumnLabel}>Period</Text>
-              <View style={styles.periodContainer}>
-                {['AM', 'PM'].map((period) => (
-                  <TouchableOpacity
-                    key={period}
-                    style={[
-                      styles.periodOption,
-                      selectedPeriod === period && styles.selectedPeriodOption
-                    ]}
-                    onPress={() => setSelectedPeriod(period as 'AM' | 'PM')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      styles.periodOptionText,
-                      selectedPeriod === period && styles.selectedPeriodOptionText
-                    ]}>
-                      {period}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            {/* AM/PM Selector (only for 12-hour format) */}
+            {!is24Hour && (
+              <View style={styles.timeColumn}>
+                <Text style={styles.timeColumnLabel}>Period</Text>
+                <View style={styles.periodContainer}>
+                  {['AM', 'PM'].map((period) => {
+                    const isSelected = getCurrentPeriod() === period;
+                    return (
+                      <TouchableOpacity
+                        key={period}
+                        style={[
+                          styles.periodOption,
+                          isSelected && styles.selectedPeriodOption
+                        ]}
+                        onPress={togglePeriod}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[
+                          styles.periodOptionText,
+                          isSelected && styles.selectedPeriodOptionText
+                        ]}>
+                          {period}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
+            )}
           </View>
 
           {/* Selected Time Display */}
           <View style={styles.selectedTimeDisplay}>
+            <Clock size={16} color="#4F46E5" strokeWidth={2} />
             <Text style={styles.selectedTimeText}>
-              {selectedHour.toString().padStart(2, '0')}:
-              {selectedMinute.toString().padStart(2, '0')} {selectedPeriod}
+              {getDisplayTime()}
             </Text>
           </View>
 
@@ -387,7 +519,7 @@ function TimePickerModal({
               onPress={handleConfirm}
               activeOpacity={0.8}
             >
-              <Text style={styles.timePickerConfirmText}>Confirm</Text>
+              <Text style={styles.timePickerConfirmText}>Set Time</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -590,21 +722,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
-  // Time Picker Modal Styles
+  // Enhanced Time Picker Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    justifyContent: 'flex-end',
   },
-  timePickerContainer: {
+  enhancedTimePickerContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: '100%',
-    maxWidth: 340,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
@@ -622,10 +752,60 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
   },
-  timePickerContent: {
+  formatToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  formatLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+    marginHorizontal: 8,
+  },
+  formatToggle: {
+    marginHorizontal: 8,
+  },
+  quickTimeContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  quickTimeLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickTimeButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickTimeButton: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  quickTimeButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#374151',
+  },
+  timeSelectorsContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 16,
   },
   timeColumn: {
     flex: 1,
@@ -635,20 +815,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   timeScrollView: {
-    maxHeight: 120,
+    maxHeight: 140,
     width: '100%',
   },
-  timeOption: {
+  timeScrollContent: {
     paddingVertical: 8,
+  },
+  timeOption: {
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 4,
     alignItems: 'center',
+    minHeight: 36,
+    justifyContent: 'center',
   },
   selectedTimeOption: {
     backgroundColor: '#4F46E5',
@@ -664,13 +849,16 @@ const styles = StyleSheet.create({
   },
   periodContainer: {
     width: '100%',
+    paddingVertical: 8,
   },
   periodOption: {
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 4,
     alignItems: 'center',
+    minHeight: 36,
+    justifyContent: 'center',
   },
   selectedPeriodOption: {
     backgroundColor: '#4F46E5',
@@ -685,14 +873,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
   },
   selectedTimeDisplay: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 16,
     marginHorizontal: 20,
-    marginTop: 8,
     backgroundColor: '#F8FAFC',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    gap: 8,
   },
   selectedTimeText: {
     fontSize: 20,
@@ -709,8 +899,8 @@ const styles = StyleSheet.create({
   timePickerCancelButton: {
     flex: 1,
     backgroundColor: '#F3F4F6',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   timePickerCancelText: {
@@ -721,8 +911,8 @@ const styles = StyleSheet.create({
   timePickerConfirmButton: {
     flex: 1,
     backgroundColor: '#4F46E5',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
   },
   timePickerConfirmText: {
