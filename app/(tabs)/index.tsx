@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, GripVertical } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 
@@ -456,11 +456,6 @@ function TaskCard({
       disabled={isActive}
       activeOpacity={0.8}
     >
-      {/* Drag Handle */}
-      <View style={styles.dragHandle}>
-        <GripVertical size={16} color="#D1D5DB" strokeWidth={2} />
-      </View>
-
       <TouchableOpacity
         style={styles.taskContent}
         onPress={onToggle}
@@ -831,12 +826,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     transform: [{ scale: 1.02 }],
     backgroundColor: '#FEFEFE',
-  },
-  dragHandle: {
-    paddingRight: 12,
-    paddingTop: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   taskContent: {
     flex: 1,
