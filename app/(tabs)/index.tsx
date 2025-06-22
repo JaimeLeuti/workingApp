@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8, // Reduced from 16 to 8
+    marginBottom: 16,
   },
   navButton: {
     width: 36,
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   dateContainer: {
     alignItems: 'center',
     flex: 1,
-    paddingVertical: 4, // Reduced from 8
+    paddingVertical: 8,
   },
   dateText: {
     fontSize: 24,
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    marginBottom: 12, // Reduced from 16 to 12
+    marginBottom: 16,
     gap: 6,
   },
   todayButtonText: {
@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   tasksList: {
-    paddingBottom: 120, // Increased padding for the smaller tab bar
+    paddingBottom: 100, // Add padding for tab bar
   },
   taskCard: {
     backgroundColor: '#FFFFFF',
