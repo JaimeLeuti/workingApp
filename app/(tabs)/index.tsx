@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 
@@ -39,6 +39,7 @@ export default function TodayScreen() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showSimpleInput, setShowSimpleInput] = useState(false);
   const [showComplexForm, setShowComplexForm] = useState(false);
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
 
   const formatDate = (date: Date) => {
     const today = new Date();
@@ -109,6 +110,13 @@ export default function TodayScreen() {
       newDate.setDate(newDate.getDate() + 1);
     }
     setCurrentDate(newDate);
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
+  };
+
+  const handleDateSelect = (selectedDate: Date) => {
+    setCurrentDate(selectedDate);
+    setShowCalendarPicker(false);
     setShowSimpleInput(false);
     setNewTaskTitle('');
   };
@@ -266,7 +274,11 @@ export default function TodayScreen() {
               <ChevronLeft size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
             
-            <View style={styles.dateContainer}>
+            <TouchableOpacity 
+              style={styles.dateContainer}
+              onPress={() => setShowCalendarPicker(true)}
+              activeOpacity={0.8}
+            >
               <Text style={styles.dateText}>{formatDate(currentDate)}</Text>
               <Text style={styles.dateSubtext}>
                 {currentDate.toLocaleDateString('en-US', { 
@@ -275,7 +287,7 @@ export default function TodayScreen() {
                   day: 'numeric'
                 })}
               </Text>
-            </View>
+            </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.navButton}
@@ -401,6 +413,14 @@ export default function TodayScreen() {
         )}
       </View>
 
+      {/* Calendar Picker Modal */}
+      <CalendarPickerModal
+        visible={showCalendarPicker}
+        onClose={() => setShowCalendarPicker(false)}
+        onDateSelect={handleDateSelect}
+        selectedDate={currentDate}
+      />
+
       {/* Complex Task Form Modal */}
       <Modal
         visible={showComplexForm}
@@ -413,6 +433,190 @@ export default function TodayScreen() {
         />
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function CalendarPickerModal({
+  visible,
+  onClose,
+  onDateSelect,
+  selectedDate,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onDateSelect: (date: Date) => void;
+  selectedDate: Date;
+}) {
+  const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
+
+  const formatMonth = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    const days = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(new Date(year, month, day));
+    }
+    
+    return days;
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newMonth = new Date(currentMonth);
+    if (direction === 'prev') {
+      newMonth.setMonth(newMonth.getMonth() - 1);
+    } else {
+      newMonth.setMonth(newMonth.getMonth() + 1);
+    }
+    setCurrentMonth(newMonth);
+  };
+
+  const isToday = (date: Date | null) => {
+    if (!date) return false;
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
+  };
+
+  const isSelected = (date: Date | null) => {
+    if (!date) return false;
+    return date.toDateString() === selectedDate.toDateString();
+  };
+
+  const isPastDate = (date: Date | null) => {
+    if (!date) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(date);
+    compareDate.setHours(0, 0, 0, 0);
+    return compareDate < today;
+  };
+
+  const days = getDaysInMonth(currentMonth);
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const handleDatePress = (date: Date) => {
+    onDateSelect(date);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    onDateSelect(today);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.calendarModalOverlay}>
+        <View style={styles.calendarModalContainer}>
+          {/* Header */}
+          <View style={styles.calendarModalHeader}>
+            <Text style={styles.calendarModalTitle}>Select Date</Text>
+            <TouchableOpacity 
+              style={styles.calendarCloseButton}
+              onPress={onClose} 
+              activeOpacity={0.7}
+            >
+              <X size={20} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Month Navigation */}
+          <View style={styles.calendarNavigation}>
+            <TouchableOpacity 
+              style={styles.calendarNavButton}
+              onPress={() => navigateMonth('prev')}
+              activeOpacity={0.7}
+            >
+              <ChevronLeft size={18} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+            
+            <Text style={styles.calendarMonthTitle}>{formatMonth(currentMonth)}</Text>
+            
+            <TouchableOpacity 
+              style={styles.calendarNavButton}
+              onPress={() => navigateMonth('next')}
+              activeOpacity={0.7}
+            >
+              <ChevronRight size={18} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Week Days */}
+          <View style={styles.calendarWeekDays}>
+            {weekDays.map((day) => (
+              <Text key={day} style={styles.calendarWeekDay}>
+                {day}
+              </Text>
+            ))}
+          </View>
+
+          {/* Calendar Grid */}
+          <View style={styles.calendarGrid}>
+            {days.map((date, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.calendarDay,
+                  !date && styles.calendarEmptyDay,
+                  isToday(date) && styles.calendarToday,
+                  isSelected(date) && styles.calendarSelectedDay,
+                  isPastDate(date) && styles.calendarPastDay,
+                ]}
+                onPress={() => date && handleDatePress(date)}
+                disabled={!date}
+                activeOpacity={0.7}
+              >
+                {date && (
+                  <Text style={[
+                    styles.calendarDayText,
+                    isToday(date) && styles.calendarTodayText,
+                    isSelected(date) && styles.calendarSelectedDayText,
+                    isPastDate(date) && styles.calendarPastDayText,
+                  ]}>
+                    {date.getDate()}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.calendarActions}>
+            <TouchableOpacity
+              style={styles.calendarTodayButton}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <Calendar size={16} color="#4F46E5" strokeWidth={2} />
+              <Text style={styles.calendarTodayButtonText}>Go to Today</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -607,6 +811,12 @@ const styles = StyleSheet.create({
   dateContainer: {
     alignItems: 'center',
     flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(79, 70, 229, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(79, 70, 229, 0.1)',
   },
   dateText: {
     fontSize: 24,
@@ -977,5 +1187,148 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 8,
     marginLeft: 8,
+  },
+  // Calendar Modal Styles
+  calendarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  calendarModalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 360,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  calendarModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  calendarModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+  },
+  calendarCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarNavigation: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  calendarNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarMonthTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+  },
+  calendarWeekDays: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#F8FAFC',
+  },
+  calendarWeekDay: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  calendarDay: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  calendarEmptyDay: {
+    opacity: 0,
+  },
+  calendarToday: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  calendarSelectedDay: {
+    backgroundColor: '#4F46E5',
+  },
+  calendarPastDay: {
+    opacity: 0.4,
+  },
+  calendarDayText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#1F2937',
+  },
+  calendarTodayText: {
+    color: '#4F46E5',
+    fontFamily: 'Inter-SemiBold',
+  },
+  calendarSelectedDayText: {
+    color: '#FFFFFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+  calendarPastDayText: {
+    color: '#9CA3AF',
+  },
+  calendarActions: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  calendarTodayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
+  },
+  calendarTodayButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
   },
 });
