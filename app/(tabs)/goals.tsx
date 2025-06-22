@@ -9,8 +9,9 @@ import {
   Platform,
   Modal,
   Alert,
+  TextInput,
 } from 'react-native';
-import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, Clock } from 'lucide-react-native';
+import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, Clock, TrendingUp, Users } from 'lucide-react-native';
 import GoalForm from '@/components/GoalForm';
 
 interface Goal {
@@ -23,7 +24,8 @@ interface Goal {
   unit?: string;
   currentProgress?: number;
   // For non-quantifiable goals
-  linkedTasks?: string[];
+  contributedHours?: number;
+  contributedTasks?: number;
   // Common fields
   deadline?: Date;
   timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
@@ -34,7 +36,7 @@ interface Goal {
   createdAt: Date;
 }
 
-type ModalState = 'none' | 'create' | 'edit';
+type ModalState = 'none' | 'create' | 'edit' | 'updateProgress';
 
 const TIMEFRAME_COLORS = {
   weekly: '#EF4444',
@@ -56,6 +58,8 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalState, setModalState] = useState<ModalState>('none');
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [progressUpdateGoal, setProgressUpdateGoal] = useState<Goal | null>(null);
+  const [newProgressValue, setNewProgressValue] = useState('');
 
   const openCreateModal = () => {
     setEditingGoal(null);
@@ -67,9 +71,17 @@ export default function GoalsScreen() {
     setModalState('edit');
   };
 
+  const openProgressUpdateModal = (goal: Goal) => {
+    setProgressUpdateGoal(goal);
+    setNewProgressValue(goal.currentProgress?.toString() || '0');
+    setModalState('updateProgress');
+  };
+
   const closeModal = () => {
     setModalState('none');
     setEditingGoal(null);
+    setProgressUpdateGoal(null);
+    setNewProgressValue('');
   };
 
   const handleSaveGoal = (goalData: Omit<Goal, 'id' | 'createdAt'>) => {
@@ -107,18 +119,32 @@ export default function GoalsScreen() {
     );
   };
 
-  const handleProgressUpdate = (goalId: string, newProgress: number) => {
+  const handleProgressUpdate = () => {
+    if (!progressUpdateGoal) return;
+
+    const newProgress = parseInt(newProgressValue, 10);
+    if (isNaN(newProgress) || newProgress < 0) {
+      Alert.alert('Error', 'Please enter a valid progress number');
+      return;
+    }
+
+    if (progressUpdateGoal.targetNumber && newProgress > progressUpdateGoal.targetNumber) {
+      Alert.alert('Error', `Progress cannot exceed target of ${progressUpdateGoal.targetNumber}`);
+      return;
+    }
+
     setGoals(prev => prev.map(goal => {
-      if (goal.id === goalId && goal.type === 'quantifiable' && goal.targetNumber) {
-        const updatedProgress = Math.max(0, Math.min(newProgress, goal.targetNumber));
+      if (goal.id === progressUpdateGoal.id && goal.type === 'quantifiable' && goal.targetNumber) {
         return {
           ...goal,
-          currentProgress: updatedProgress,
-          isCompleted: updatedProgress >= goal.targetNumber
+          currentProgress: newProgress,
+          isCompleted: newProgress >= goal.targetNumber
         };
       }
       return goal;
     }));
+
+    closeModal();
   };
 
   // Group goals by timeframe
@@ -209,7 +235,7 @@ export default function GoalsScreen() {
                       goal={goal} 
                       onEdit={() => openEditModal(goal)}
                       onDelete={() => handleDeleteGoal(goal.id)}
-                      onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
+                      onUpdateProgress={() => openProgressUpdateModal(goal)}
                     />
                   ))}
 
@@ -227,7 +253,7 @@ export default function GoalsScreen() {
                           goal={goal} 
                           onEdit={() => openEditModal(goal)}
                           onDelete={() => handleDeleteGoal(goal.id)}
-                          onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
+                          onUpdateProgress={() => openProgressUpdateModal(goal)}
                         />
                       ))}
                     </>
@@ -241,7 +267,7 @@ export default function GoalsScreen() {
 
       {/* Goal Form Modal */}
       <Modal
-        visible={modalState !== 'none'}
+        visible={modalState === 'create' || modalState === 'edit'}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={closeModal}
@@ -253,6 +279,63 @@ export default function GoalsScreen() {
           isEditing={modalState === 'edit'}
         />
       </Modal>
+
+      {/* Progress Update Modal */}
+      <Modal
+        visible={modalState === 'updateProgress'}
+        transparent
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.progressUpdateContainer}>
+            <View style={styles.progressUpdateHeader}>
+              <Text style={styles.progressUpdateTitle}>Update Progress</Text>
+              <Text style={styles.progressUpdateSubtitle}>
+                {progressUpdateGoal?.title}
+              </Text>
+            </View>
+
+            <View style={styles.progressUpdateContent}>
+              <Text style={styles.progressUpdateLabel}>
+                Current Progress ({progressUpdateGoal?.unit || 'units'})
+              </Text>
+              <TextInput
+                style={styles.progressUpdateInput}
+                value={newProgressValue}
+                onChangeText={setNewProgressValue}
+                keyboardType="numeric"
+                placeholder="Enter progress"
+                placeholderTextColor="#9CA3AF"
+                autoFocus
+              />
+              
+              {progressUpdateGoal?.targetNumber && (
+                <Text style={styles.progressUpdateTarget}>
+                  Target: {progressUpdateGoal.targetNumber} {progressUpdateGoal.unit}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.progressUpdateActions}>
+              <TouchableOpacity
+                style={styles.progressUpdateCancelButton}
+                onPress={closeModal}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.progressUpdateCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.progressUpdateSaveButton}
+                onPress={handleProgressUpdate}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.progressUpdateSaveText}>Update</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -261,12 +344,12 @@ function GoalCard({
   goal, 
   onEdit, 
   onDelete, 
-  onProgressUpdate 
+  onUpdateProgress 
 }: { 
   goal: Goal; 
   onEdit: () => void;
   onDelete: () => void;
-  onProgressUpdate: (newProgress: number) => void;
+  onUpdateProgress: () => void;
 }) {
   const getProgressData = () => {
     if (goal.type === 'quantifiable' && goal.targetNumber && goal.currentProgress !== undefined) {
@@ -276,34 +359,19 @@ function GoalCard({
         target: goal.targetNumber,
         percentage: Math.round(percentage),
         unit: goal.unit || '',
-        showControls: true
+        showProgressBar: true
       };
     } else {
-      // For non-quantifiable goals, calculate based on linked tasks
-      // For now, show placeholder data
+      // For non-quantifiable goals, show contributed hours and tasks
       return {
-        current: 0,
-        target: goal.linkedTasks?.length || 0,
-        percentage: 0,
-        unit: 'tasks',
-        showControls: false
+        contributedHours: goal.contributedHours || 0,
+        contributedTasks: goal.contributedTasks || 0,
+        showProgressBar: false
       };
     }
   };
 
   const progressData = getProgressData();
-  
-  const incrementProgress = () => {
-    if (goal.currentProgress !== undefined) {
-      onProgressUpdate(goal.currentProgress + 1);
-    }
-  };
-
-  const decrementProgress = () => {
-    if (goal.currentProgress !== undefined) {
-      onProgressUpdate(goal.currentProgress - 1);
-    }
-  };
 
   const formatDeadline = (deadline: Date) => {
     return deadline.toLocaleDateString('en-US', {
@@ -359,53 +427,72 @@ function GoalCard({
         </View>
       </View>
 
+      {/* Progress Section */}
       <View style={styles.goalProgress}>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>
-            {progressData.current} of {progressData.target} {progressData.unit}
-          </Text>
-          <Text style={styles.progressPercentage}>
-            {progressData.percentage}%
-          </Text>
-        </View>
-        
-        <View style={styles.progressBar}>
-          <View 
-            style={[
-              styles.progressFill, 
-              { 
-                width: `${Math.min(progressData.percentage, 100)}%`,
-                backgroundColor: goal.color 
-              }
-            ]} 
-          />
-        </View>
+        {progressData.showProgressBar ? (
+          // Quantifiable Goal Progress
+          <>
+            <View style={styles.progressInfo}>
+              <Text style={styles.progressText}>
+                {progressData.current} of {progressData.target} {progressData.unit}
+              </Text>
+              <Text style={styles.progressPercentage}>
+                {progressData.percentage}%
+              </Text>
+            </View>
+            
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    width: `${Math.min(progressData.percentage, 100)}%`,
+                    backgroundColor: goal.color 
+                  }
+                ]} 
+              />
+            </View>
 
-        {/* Progress Controls - Only for quantifiable goals */}
-        {progressData.showControls && !goal.isCompleted && (
-          <View style={styles.progressControls}>
-            <TouchableOpacity
-              style={[
-                styles.progressButton, 
-                progressData.current <= 0 && styles.progressButtonDisabled
-              ]}
-              onPress={decrementProgress}
-              disabled={progressData.current <= 0}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.progressButtonText}>-</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.progressButton, 
-                progressData.current >= progressData.target && styles.progressButtonDisabled
-              ]}
-              onPress={incrementProgress}
-              disabled={progressData.current >= progressData.target}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.progressButtonText}>+</Text>
-            </TouchableOpacity>
+            {/* Update Progress Button */}
+            {!goal.isCompleted && (
+              <TouchableOpacity
+                style={styles.updateProgressButton}
+                onPress={onUpdateProgress}
+                activeOpacity={0.7}
+              >
+                <TrendingUp size={14} color="#4F46E5" strokeWidth={2} />
+                <Text style={styles.updateProgressButtonText}>Update Progress</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          // Non-Quantifiable Goal Contributions
+          <View style={styles.contributionsContainer}>
+            <View style={styles.contributionItem}>
+              <View style={styles.contributionIconContainer}>
+                <Clock size={16} color="#F59E0B" strokeWidth={2} />
+              </View>
+              <View style={styles.contributionContent}>
+                <Text style={styles.contributionValue}>
+                  {progressData.contributedHours}
+                </Text>
+                <Text style={styles.contributionLabel}>Hours Contributed</Text>
+              </View>
+            </View>
+
+            <View style={styles.contributionDivider} />
+
+            <View style={styles.contributionItem}>
+              <View style={styles.contributionIconContainer}>
+                <Check size={16} color="#10B981" strokeWidth={2} />
+              </View>
+              <View style={styles.contributionContent}>
+                <Text style={styles.contributionValue}>
+                  {progressData.contributedTasks}
+                </Text>
+                <Text style={styles.contributionLabel}>Tasks Completed</Text>
+              </View>
+            </View>
           </View>
         )}
       </View>
@@ -687,26 +774,68 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  progressControls: {
+  updateProgressButton: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    backgroundColor: '#EEF2FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
   },
-  progressButton: {
+  updateProgressButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
+    marginLeft: 4,
+  },
+  contributionsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  contributionItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contributionIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  progressButtonDisabled: {
-    backgroundColor: '#E5E7EB',
+  contributionContent: {
+    flex: 1,
   },
-  progressButtonText: {
+  contributionValue: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
-    color: '#FFFFFF',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  contributionLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  contributionDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 12,
   },
   goalFooter: {
     flexDirection: 'row',
@@ -764,5 +893,97 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#10B981',
     marginLeft: 4,
+  },
+  // Progress Update Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  progressUpdateContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  progressUpdateHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  progressUpdateTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  progressUpdateSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  progressUpdateContent: {
+    padding: 20,
+  },
+  progressUpdateLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  progressUpdateInput: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#1F2937',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  progressUpdateTarget: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+  },
+  progressUpdateActions: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  progressUpdateCancelButton: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  progressUpdateCancelText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+  },
+  progressUpdateSaveButton: {
+    flex: 1,
+    backgroundColor: '#4F46E5',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  progressUpdateSaveText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#FFFFFF',
   },
 });

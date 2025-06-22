@@ -23,7 +23,8 @@ interface Goal {
   unit?: string;
   currentProgress?: number;
   // For non-quantifiable goals
-  linkedTasks?: string[];
+  contributedHours?: number;
+  contributedTasks?: number;
   // Common fields
   deadline?: Date;
   timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
@@ -105,8 +106,9 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
   const [unit, setUnit] = useState(goal?.unit || '');
   const [currentProgress, setCurrentProgress] = useState(goal?.currentProgress?.toString() || '0');
 
-  // Non-quantifiable goal fields (placeholder for future task linking)
-  const [linkedTasks] = useState<string[]>(goal?.linkedTasks || []);
+  // Non-quantifiable goal fields
+  const [contributedHours, setContributedHours] = useState(goal?.contributedHours?.toString() || '0');
+  const [contributedTasks, setContributedTasks] = useState(goal?.contributedTasks?.toString() || '0');
 
   // Common fields
   const [deadline, setDeadline] = useState<Date | null>(goal?.deadline || null);
@@ -247,6 +249,21 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       }
     }
 
+    if (goalType === 'non-quantifiable' && isEditing) {
+      const hoursNum = parseInt(contributedHours, 10);
+      const tasksNum = parseInt(contributedTasks, 10);
+      
+      if (isNaN(hoursNum) || hoursNum < 0) {
+        Alert.alert('Error', 'Please enter a valid number of contributed hours');
+        return false;
+      }
+      
+      if (isNaN(tasksNum) || tasksNum < 0) {
+        Alert.alert('Error', 'Please enter a valid number of contributed tasks');
+        return false;
+      }
+    }
+
     if (timeframe === 'custom' && !deadline) {
       Alert.alert('Error', 'Please set a deadline for custom timeframe');
       return false;
@@ -276,7 +293,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       color: finalCategoryColor,
       deadline,
       isCompleted: false,
-      linkedTasks,
     };
 
     if (goalType === 'quantifiable') {
@@ -288,8 +304,13 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       goalData.currentProgress = Math.min(progressNum, targetNum);
       goalData.isCompleted = progressNum >= targetNum;
     } else {
-      // For non-quantifiable goals, completion is based on linked tasks
-      goalData.isCompleted = false; // Will be calculated based on linked tasks
+      // For non-quantifiable goals, set contributed hours and tasks
+      const hoursNum = isEditing ? parseInt(contributedHours, 10) : 0;
+      const tasksNum = isEditing ? parseInt(contributedTasks, 10) : 0;
+      
+      goalData.contributedHours = hoursNum;
+      goalData.contributedTasks = tasksNum;
+      goalData.isCompleted = false; // Will be calculated based on linked tasks later
     }
 
     onSave(goalData);
@@ -473,10 +494,10 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                   styles.goalTypeTitle,
                   goalType === 'non-quantifiable' && styles.goalTypeTitleSelected
                 ]}>
-                  Task-Based
+                  Contribution-Based
                 </Text>
                 <Text style={styles.goalTypeDescription}>
-                  Progress based on completion of linked tasks
+                  Track hours and tasks contributed to this goal
                 </Text>
               </View>
             </TouchableOpacity>
@@ -525,17 +546,47 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
           </>
         )}
 
-        {/* Non-Quantifiable Goal Info */}
+        {/* Non-Quantifiable Goal Fields */}
         {goalType === 'non-quantifiable' && (
-          <View style={styles.section}>
-            <View style={styles.infoCard}>
-              <CheckSquare size={16} color="#6B7280" strokeWidth={2} />
-              <Text style={styles.infoText}>
-                Progress will be calculated based on linked tasks from your Task Page. 
-                You can link tasks to this goal after creation.
-              </Text>
-            </View>
-          </View>
+          <>
+            {isEditing ? (
+              <>
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Contributed Hours</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Hours contributed to this goal"
+                    placeholderTextColor="#9CA3AF"
+                    value={contributedHours}
+                    onChangeText={setContributedHours}
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Contributed Tasks</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Tasks completed for this goal"
+                    placeholderTextColor="#9CA3AF"
+                    value={contributedTasks}
+                    onChangeText={setContributedTasks}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </>
+            ) : (
+              <View style={styles.section}>
+                <View style={styles.infoCard}>
+                  <CheckSquare size={16} color="#6B7280" strokeWidth={2} />
+                  <Text style={styles.infoText}>
+                    Progress will be tracked by hours and tasks you contribute to this goal. 
+                    You can link tasks from your Task Page and log time spent working on this goal.
+                  </Text>
+                </View>
+              </View>
+            )}
+          </>
         )}
 
         {/* Category Selection */}
