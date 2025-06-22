@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X, Chrome as Home } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X, ArrowLeft } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 import { useFocusEffect } from '@react-navigation/native';
@@ -324,6 +324,18 @@ export default function TodayScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Back to Today Button - Now in header */}
+          {!isToday() && (
+            <TouchableOpacity
+              style={styles.backToTodayButton}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <ArrowLeft size={14} color="#10B981" strokeWidth={2} />
+              <Text style={styles.backToTodayText}>Back to Today</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Enhanced Progress Card */}
           {progress.total > 0 && (
             <View style={styles.progressCard}>
@@ -358,20 +370,6 @@ export default function TodayScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Back to Today Button */}
-        {!isToday() && (
-          <View style={styles.backToTodayContainer}>
-            <TouchableOpacity
-              style={styles.backToTodayButton}
-              onPress={goToToday}
-              activeOpacity={0.8}
-            >
-              <Home size={16} color="#4F46E5" strokeWidth={2} />
-              <Text style={styles.backToTodayText}>Back to Today</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Add Task Section */}
         <View style={styles.addSection}>
           {!showSimpleInput ? (
@@ -863,6 +861,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
   },
+  backToTodayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: 6,
+    marginBottom: 16,
+    alignSelf: 'center',
+  },
+  backToTodayText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#10B981',
+  },
   progressCard: {
     backgroundColor: '#F8FAFC',
     borderRadius: 16,
@@ -921,26 +938,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-  },
-  backToTodayContainer: {
-    marginBottom: 16,
-  },
-  backToTodayButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#C7D2FE',
-    gap: 8,
-  },
-  backToTodayText: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#4F46E5',
   },
   addSection: {
     marginBottom: 24,
