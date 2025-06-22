@@ -119,6 +119,38 @@ export default function TodayScreen() {
     return currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.order)) + 1 : 0;
   };
 
+  // Fixed: Properly handle opening complex form
+  const handleOpenComplexForm = () => {
+    // First, ensure simple input is closed
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
+    // Then open complex form after a brief delay to ensure state is clean
+    setTimeout(() => {
+      setShowComplexForm(true);
+    }, 100);
+  };
+
+  // Fixed: Properly handle opening simple input
+  const handleOpenSimpleInput = () => {
+    // First, ensure complex form is closed
+    setShowComplexForm(false);
+    // Then open simple input after a brief delay to ensure state is clean
+    setTimeout(() => {
+      setShowSimpleInput(true);
+    }, 100);
+  };
+
+  // Fixed: Properly handle canceling complex form
+  const handleCancelComplexForm = () => {
+    setShowComplexForm(false);
+  };
+
+  // Fixed: Properly handle canceling simple input
+  const handleCancelSimpleInput = () => {
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
+  };
+
   const addSimpleTask = () => {
     if (!newTaskTitle.trim()) {
       Alert.alert('Error', 'Please enter a task title');
@@ -161,38 +193,6 @@ export default function TodayScreen() {
 
     setTasks(prev => [...prev, newTask]);
     setShowComplexForm(false);
-  };
-
-  // Fixed: Properly handle opening complex form
-  const handleOpenComplexForm = () => {
-    // First, ensure simple input is closed
-    setShowSimpleInput(false);
-    setNewTaskTitle('');
-    // Then open complex form after a brief delay to ensure state is clean
-    setTimeout(() => {
-      setShowComplexForm(true);
-    }, 100);
-  };
-
-  // Fixed: Properly handle opening simple input
-  const handleOpenSimpleInput = () => {
-    // First, ensure complex form is closed
-    setShowComplexForm(false);
-    // Then open simple input after a brief delay to ensure state is clean
-    setTimeout(() => {
-      setShowSimpleInput(true);
-    }, 100);
-  };
-
-  // Fixed: Properly handle canceling complex form
-  const handleCancelComplexForm = () => {
-    setShowComplexForm(false);
-  };
-
-  // Fixed: Properly handle canceling simple input
-  const handleCancelSimpleInput = () => {
-    setShowSimpleInput(false);
-    setNewTaskTitle('');
   };
 
   const toggleTask = (taskId: string) => {
@@ -435,7 +435,7 @@ export default function TodayScreen() {
       <Modal
         visible={showComplexForm}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={handleCancelComplexForm}
       >
         <ComplexTaskForm

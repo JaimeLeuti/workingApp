@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
   Modal,
+  SafeAreaView,
 } from 'react-native';
 import { Plus, X, Clock, Trash2, ChevronDown } from 'lucide-react-native';
 
@@ -96,15 +97,15 @@ export default function ComplexTaskForm({ onSave, onCancel }: ComplexTaskFormPro
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Create Complex Task</Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
-            <X size={20} color="#6B7280" strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Create Complex Task</Text>
+        <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
+          <X size={20} color="#6B7280" strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Task Title */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Task Title *</Text>
@@ -234,7 +235,7 @@ export default function ComplexTaskForm({ onSave, onCancel }: ComplexTaskFormPro
         onTimeSelect={handleTimeSelection}
         currentTime={startTime}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -494,16 +495,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  scrollView: {
-    flex: 1,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontSize: 18,
@@ -517,6 +517,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  scrollView: {
+    flex: 1,
   },
   section: {
     paddingHorizontal: 20,
@@ -656,8 +659,10 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   cancelActionButton: {
     flex: 1,
