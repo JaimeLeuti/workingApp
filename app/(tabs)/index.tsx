@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X, Home } from 'lucide-react-native';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import { Plimport { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X, Chrome as Home } from 'lucide-react-native'aggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 
 interface Subtask {
@@ -40,19 +39,6 @@ export default function TodayScreen() {
   const [showSimpleInput, setShowSimpleInput] = useState(false);
   const [showComplexForm, setShowComplexForm] = useState(false);
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
-
-  // Listen for the "go to today" event from tab press
-  useEffect(() => {
-    const handleGoToToday = () => {
-      goToToday();
-    };
-
-    window.addEventListener('goToToday', handleGoToToday);
-    
-    return () => {
-      window.removeEventListener('goToToday', handleGoToToday);
-    };
-  }, []);
 
   const formatDate = (date: Date) => {
     const today = new Date();
