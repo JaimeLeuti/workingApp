@@ -8,34 +8,32 @@ import {
   ScrollView,
   Platform,
   Modal,
-  TextInput,
   Alert,
 } from 'react-native';
-import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, X } from 'lucide-react-native';
+import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3 } from 'lucide-react-native';
+import GoalForm from '@/components/GoalForm';
 
 interface Goal {
   id: string;
   title: string;
   description: string;
-  progress: number;
-  target: number;
+  type: 'quantifiable' | 'non-quantifiable';
+  // For quantifiable goals
+  targetNumber?: number;
+  unit?: string;
+  currentProgress?: number;
+  // For non-quantifiable goals
+  linkedTasks?: string[];
+  // Common fields
+  deadline?: Date;
   category: string;
+  customCategory?: string;
   color: string;
-  dueDate: string;
   isCompleted: boolean;
   createdAt: Date;
 }
 
 type ModalState = 'none' | 'create' | 'edit';
-
-const GOAL_CATEGORIES = [
-  { name: 'Health', color: '#10B981' },
-  { name: 'Learning', color: '#8B5CF6' },
-  { name: 'Career', color: '#06B6D4' },
-  { name: 'Personal', color: '#F59E0B' },
-  { name: 'Finance', color: '#EF4444' },
-  { name: 'Fitness', color: '#84CC16' },
-];
 
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -94,12 +92,12 @@ export default function GoalsScreen() {
 
   const handleProgressUpdate = (goalId: string, newProgress: number) => {
     setGoals(prev => prev.map(goal => {
-      if (goal.id === goalId) {
-        const updatedProgress = Math.max(0, Math.min(newProgress, goal.target));
+      if (goal.id === goalId && goal.type === 'quantifiable' && goal.targetNumber) {
+        const updatedProgress = Math.max(0, Math.min(newProgress, goal.targetNumber));
         return {
           ...goal,
-          progress: updatedProgress,
-          isCompleted: updatedProgress >= goal.target
+          currentProgress: updatedProgress,
+          isCompleted: updatedProgress >= goal.targetNumber
         };
       }
       return goal;
@@ -203,7 +201,7 @@ export default function GoalsScreen() {
       <Modal
         visible={modalState !== 'none'}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="fullScreen"
         onRequestClose={closeModal}
       >
         <GoalForm
@@ -228,14 +226,49 @@ function GoalCard({
   onDelete: () => void;
   onProgressUpdate: (newProgress: number) => void;
 }) {
-  const progressPercentage = (goal.progress / goal.target) * 100;
+  const getProgressData = () => {
+    if (goal.type === 'quantifiable' && goal.targetNumber && goal.currentProgress !== undefined) {
+      const percentage = (goal.currentProgress / goal.targetNumber) * 100;
+      return {
+        current: goal.currentProgress,
+        target: goal.targetNumber,
+        percentage: Math.round(percentage),
+        unit: goal.unit || '',
+        showControls: true
+      };
+    } else {
+      // For non-quantifiable goals, calculate based on linked tasks
+      // For now, show placeholder data
+      return {
+        current: 0,
+        target: goal.linkedTasks?.length || 0,
+        percentage: 0,
+        unit: 'tasks',
+        showControls: false
+      };
+    }
+  };
+
+  const progressData = getProgressData();
   
   const incrementProgress = () => {
-    onProgressUpdate(goal.progress + 1);
+    if (goal.currentProgress !== undefined) {
+      onProgressUpdate(goal.currentProgress + 1);
+    }
   };
 
   const decrementProgress = () => {
-    onProgressUpdate(goal.progress - 1);
+    if (goal.currentProgress !== undefined) {
+      onProgressUpdate(goal.currentProgress - 1);
+    }
+  };
+
+  const formatDeadline = (deadline: Date) => {
+    return deadline.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   return (
@@ -243,10 +276,19 @@ function GoalCard({
       <View style={styles.goalHeader}>
         <View style={[styles.goalColorIndicator, { backgroundColor: goal.color }]} />
         <View style={styles.goalInfo}>
-          <Text style={[styles.goalTitle, goal.isCompleted && styles.completedText]}>
-            {goal.title}
-          </Text>
-          <Text style={styles.goalDescription}>{goal.description}</Text>
+          <View style={styles.goalTitleContainer}>
+            <Text style={[styles.goalTitle, goal.isCompleted && styles.completedText]}>
+              {goal.title}
+            </Text>
+            <View style={styles.goalTypeBadge}>
+              <Text style={styles.goalTypeBadgeText}>
+                {goal.type === 'quantifiable' ? 'Quantifiable' : 'Task-based'}
+              </Text>
+            </View>
+          </View>
+          {goal.description && (
+            <Text style={styles.goalDescription}>{goal.description}</Text>
+          )}
         </View>
         <View style={styles.goalActions}>
           <TouchableOpacity
@@ -269,10 +311,10 @@ function GoalCard({
       <View style={styles.goalProgress}>
         <View style={styles.progressInfo}>
           <Text style={styles.progressText}>
-            {goal.progress} of {goal.target}
+            {progressData.current} of {progressData.target} {progressData.unit}
           </Text>
           <Text style={styles.progressPercentage}>
-            {Math.round(progressPercentage)}%
+            {progressData.percentage}%
           </Text>
         </View>
         
@@ -281,28 +323,34 @@ function GoalCard({
             style={[
               styles.progressFill, 
               { 
-                width: `${Math.min(progressPercentage, 100)}%`,
+                width: `${Math.min(progressData.percentage, 100)}%`,
                 backgroundColor: goal.color 
               }
             ]} 
           />
         </View>
 
-        {/* Progress Controls */}
-        {!goal.isCompleted && (
+        {/* Progress Controls - Only for quantifiable goals */}
+        {progressData.showControls && !goal.isCompleted && (
           <View style={styles.progressControls}>
             <TouchableOpacity
-              style={[styles.progressButton, goal.progress <= 0 && styles.progressButtonDisabled]}
+              style={[
+                styles.progressButton, 
+                progressData.current <= 0 && styles.progressButtonDisabled
+              ]}
               onPress={decrementProgress}
-              disabled={goal.progress <= 0}
+              disabled={progressData.current <= 0}
               activeOpacity={0.7}
             >
               <Text style={styles.progressButtonText}>-</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.progressButton, goal.progress >= goal.target && styles.progressButtonDisabled]}
+              style={[
+                styles.progressButton, 
+                progressData.current >= progressData.target && styles.progressButtonDisabled
+              ]}
               onPress={incrementProgress}
-              disabled={goal.progress >= goal.target}
+              disabled={progressData.current >= progressData.target}
               activeOpacity={0.7}
             >
               <Text style={styles.progressButtonText}>+</Text>
@@ -318,10 +366,12 @@ function GoalCard({
           </Text>
         </View>
         
-        <View style={styles.dueDateContainer}>
-          <Calendar size={12} color="#9CA3AF" strokeWidth={2} />
-          <Text style={styles.dueDate}>{goal.dueDate}</Text>
-        </View>
+        {goal.deadline && (
+          <View style={styles.dueDateContainer}>
+            <Calendar size={12} color="#9CA3AF" strokeWidth={2} />
+            <Text style={styles.dueDate}>{formatDeadline(goal.deadline)}</Text>
+          </View>
+        )}
 
         {goal.isCompleted && (
           <View style={styles.completedBadge}>
@@ -331,192 +381,6 @@ function GoalCard({
         )}
       </View>
     </View>
-  );
-}
-
-function GoalForm({ 
-  goal, 
-  onSave, 
-  onCancel, 
-  isEditing 
-}: {
-  goal: Goal | null;
-  onSave: (goalData: Omit<Goal, 'id' | 'createdAt'>) => void;
-  onCancel: () => void;
-  isEditing: boolean;
-}) {
-  const [title, setTitle] = useState(goal?.title || '');
-  const [description, setDescription] = useState(goal?.description || '');
-  const [target, setTarget] = useState(goal?.target.toString() || '');
-  const [progress, setProgress] = useState(goal?.progress.toString() || '0');
-  const [selectedCategory, setSelectedCategory] = useState(
-    goal?.category || GOAL_CATEGORIES[0].name
-  );
-  const [dueDate, setDueDate] = useState(goal?.dueDate || 'Dec 31, 2024');
-
-  const selectedCategoryData = GOAL_CATEGORIES.find(cat => cat.name === selectedCategory) || GOAL_CATEGORIES[0];
-
-  const handleSave = () => {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a goal title');
-      return;
-    }
-
-    const targetNumber = parseInt(target, 10);
-    const progressNumber = parseInt(progress, 10);
-
-    if (isNaN(targetNumber) || targetNumber <= 0) {
-      Alert.alert('Error', 'Please enter a valid target number');
-      return;
-    }
-
-    if (isNaN(progressNumber) || progressNumber < 0) {
-      Alert.alert('Error', 'Please enter a valid progress number');
-      return;
-    }
-
-    const goalData = {
-      title: title.trim(),
-      description: description.trim(),
-      target: targetNumber,
-      progress: Math.min(progressNumber, targetNumber),
-      category: selectedCategory,
-      color: selectedCategoryData.color,
-      dueDate,
-      isCompleted: progressNumber >= targetNumber,
-    };
-
-    onSave(goalData);
-  };
-
-  return (
-    <SafeAreaView style={styles.formContainer}>
-      <View style={styles.formHeader}>
-        <Text style={styles.formTitle}>
-          {isEditing ? 'Edit Goal' : 'Create New Goal'}
-        </Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
-          <X size={20} color="#6B7280" strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.formContent} showsVerticalScrollIndicator={false}>
-        {/* Title */}
-        <View style={styles.formSection}>
-          <Text style={styles.formLabel}>Goal Title *</Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Enter goal title"
-            placeholderTextColor="#9CA3AF"
-            value={title}
-            onChangeText={setTitle}
-            autoFocus
-          />
-        </View>
-
-        {/* Description */}
-        <View style={styles.formSection}>
-          <Text style={styles.formLabel}>Description</Text>
-          <TextInput
-            style={[styles.formInput, styles.formTextArea]}
-            placeholder="Describe your goal (optional)"
-            placeholderTextColor="#9CA3AF"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
-        </View>
-
-        {/* Target */}
-        <View style={styles.formSection}>
-          <Text style={styles.formLabel}>Target *</Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Enter target number"
-            placeholderTextColor="#9CA3AF"
-            value={target}
-            onChangeText={setTarget}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Progress (only show when editing) */}
-        {isEditing && (
-          <View style={styles.formSection}>
-            <Text style={styles.formLabel}>Current Progress</Text>
-            <TextInput
-              style={styles.formInput}
-              placeholder="Enter current progress"
-              placeholderTextColor="#9CA3AF"
-              value={progress}
-              onChangeText={setProgress}
-              keyboardType="numeric"
-            />
-          </View>
-        )}
-
-        {/* Category */}
-        <View style={styles.formSection}>
-          <Text style={styles.formLabel}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {GOAL_CATEGORIES.map((category) => (
-              <TouchableOpacity
-                key={category.name}
-                style={[
-                  styles.categoryOption,
-                  { backgroundColor: category.color + '20' },
-                  selectedCategory === category.name && styles.selectedCategoryOption
-                ]}
-                onPress={() => setSelectedCategory(category.name)}
-                activeOpacity={0.7}
-              >
-                <Text style={[
-                  styles.categoryOptionText,
-                  { color: category.color },
-                  selectedCategory === category.name && styles.selectedCategoryText
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Due Date */}
-        <View style={styles.formSection}>
-          <Text style={styles.formLabel}>Due Date</Text>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Enter due date"
-            placeholderTextColor="#9CA3AF"
-            value={dueDate}
-            onChangeText={setDueDate}
-          />
-        </View>
-      </ScrollView>
-
-      {/* Action Buttons */}
-      <View style={styles.formActions}>
-        <TouchableOpacity
-          style={styles.formCancelButton}
-          onPress={onCancel}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.formCancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.formSaveButton}
-          onPress={handleSave}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.formSaveButtonText}>
-            {isEditing ? 'Update Goal' : 'Create Goal'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
   );
 }
 
@@ -672,15 +536,35 @@ const styles = StyleSheet.create({
   goalInfo: {
     flex: 1,
   },
+  goalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   goalTitle: {
     fontSize: 15,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginBottom: 2,
+    flex: 1,
+    marginRight: 8,
   },
   completedText: {
     textDecorationLine: 'line-through',
     color: '#9CA3AF',
+  },
+  goalTypeBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  goalTypeBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   goalDescription: {
     fontSize: 13,
@@ -787,116 +671,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#10B981',
     marginLeft: 4,
-  },
-  // Form Styles
-  formContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  formHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  formTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1F2937',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  formContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  formSection: {
-    paddingVertical: 16,
-  },
-  formLabel: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  formInput: {
-    fontSize: 16,
-    fontFamily: 'Inter-Medium',
-    color: '#1F2937',
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  formTextArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  categoryScroll: {
-    marginTop: 4,
-  },
-  categoryOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  selectedCategoryOption: {
-    borderColor: '#4F46E5',
-  },
-  categoryOptionText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  selectedCategoryText: {
-    color: '#4F46E5',
-  },
-  formActions: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  formCancelButton: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  formCancelButtonText: {
-    fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
-  },
-  formSaveButton: {
-    flex: 1,
-    backgroundColor: '#4F46E5',
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  formSaveButtonText: {
-    fontSize: 15,
-    fontFamily: 'Inter-SemiBold',
-    color: '#FFFFFF',
   },
 });
