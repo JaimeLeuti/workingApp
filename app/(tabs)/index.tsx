@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, X, Home } from 'lucide-react-native';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 
@@ -40,6 +40,19 @@ export default function TodayScreen() {
   const [showSimpleInput, setShowSimpleInput] = useState(false);
   const [showComplexForm, setShowComplexForm] = useState(false);
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
+
+  // Listen for the "go to today" event from tab press
+  useEffect(() => {
+    const handleGoToToday = () => {
+      goToToday();
+    };
+
+    window.addEventListener('goToToday', handleGoToToday);
+    
+    return () => {
+      window.removeEventListener('goToToday', handleGoToToday);
+    };
+  }, []);
 
   const formatDate = (date: Date) => {
     const today = new Date();
@@ -119,6 +132,17 @@ export default function TodayScreen() {
     setShowCalendarPicker(false);
     setShowSimpleInput(false);
     setNewTaskTitle('');
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+    setShowSimpleInput(false);
+    setNewTaskTitle('');
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    return currentDate.toDateString() === today.toDateString();
   };
 
   const getNextOrder = () => {
@@ -297,6 +321,18 @@ export default function TodayScreen() {
               <ChevronRight size={18} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
           </View>
+
+          {/* Go to Today Button - Only show when not on today */}
+          {!isToday() && (
+            <TouchableOpacity
+              style={styles.todayButton}
+              onPress={goToToday}
+              activeOpacity={0.8}
+            >
+              <Home size={14} color="#4F46E5" strokeWidth={2} />
+              <Text style={styles.todayButtonText}>Go to Today</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Enhanced Progress Card */}
           {progress.total > 0 && (
@@ -812,11 +848,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(79, 70, 229, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(79, 70, 229, 0.1)',
   },
   dateText: {
     fontSize: 24,
@@ -828,6 +859,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-Medium',
     color: '#6B7280',
+  },
+  todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 16,
+    gap: 6,
+  },
+  todayButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#4F46E5',
   },
   progressCard: {
     backgroundColor: '#F8FAFC',

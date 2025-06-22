@@ -1,8 +1,26 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { CircleCheck as CheckCircle2, Target, Calendar, User } from 'lucide-react-native';
+import { useRouter, usePathname } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function TabLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Function to handle tab press and navigate to today for the index tab
+  const handleTabPress = (routeName: string) => {
+    if (routeName === 'index') {
+      // If we're already on the index tab, trigger a navigation to today
+      // This will be handled by a custom event or state management
+      if (pathname === '/') {
+        // Emit a custom event that the index screen can listen to
+        const event = new CustomEvent('goToToday');
+        window.dispatchEvent(event);
+      }
+    }
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -41,6 +59,9 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <CheckCircle2 size={24} color={color} strokeWidth={2.5} />
           ),
+        }}
+        listeners={{
+          tabPress: () => handleTabPress('index'),
         }}
       />
       <Tabs.Screen
