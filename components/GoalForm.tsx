@@ -219,9 +219,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
             onChangeText={setTitle}
             autoFocus
           />
-          <Text style={styles.helpText}>
-            Example: "Read 500 pages" or "Launch my portfolio"
-          </Text>
         </View>
 
         {/* Description */}
@@ -237,9 +234,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
             numberOfLines={3}
             textAlignVertical="top"
           />
-          <Text style={styles.helpText}>
-            Example: "Focus on UX books" or "Targeting October for launch"
-          </Text>
         </View>
 
         {/* Goal Type Selection */}
@@ -271,7 +265,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                   Quantifiable
                 </Text>
                 <Text style={styles.goalTypeDescription}>
-                  Track progress with measurable numbers (pages, hours, etc.)
+                  Track progress with measurable numbers
                 </Text>
               </View>
             </TouchableOpacity>
@@ -296,7 +290,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                   styles.goalTypeTitle,
                   goalType === 'non-quantifiable' && styles.goalTypeTitleSelected
                 ]}>
-                  Non-Quantifiable
+                  Task-Based
                 </Text>
                 <Text style={styles.goalTypeDescription}>
                   Progress based on completion of linked tasks
@@ -319,9 +313,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                 onChangeText={setTargetNumber}
                 keyboardType="numeric"
               />
-              <Text style={styles.helpText}>
-                Examples: 500, 40, 10000
-              </Text>
             </View>
 
             <View style={styles.section}>
@@ -333,9 +324,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
                 value={unit}
                 onChangeText={setUnit}
               />
-              <Text style={styles.helpText}>
-                Examples: Pages, Hours, Dollars, Kilometers
-              </Text>
             </View>
 
             {isEditing && (
@@ -538,8 +526,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
-    marginTop: 6,
-    lineHeight: 16,
+    marginBottom: 8,
   },
   goalTypeContainer: {
     gap: 12,
