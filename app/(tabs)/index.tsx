@@ -6,12 +6,12 @@ import {
   SafeAreaView,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Platform,
   Alert,
   Modal,
 } from 'react-native';
-import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target } from 'lucide-react-native';
+import { Plus, Check, Trash2, ChevronLeft, ChevronRight, Calendar, CircleCheck as CheckCircle2, Clock, Target, GripVertical } from 'lucide-react-native';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import ComplexTaskForm from '@/components/ComplexTaskForm';
 
 interface Subtask {
@@ -30,6 +30,7 @@ interface Task {
   startTime?: Date;
   duration?: number;
   isComplex?: boolean;
+  order: number; // Add order field for consistent sorting
 }
 
 export default function TodayScreen() {
@@ -63,7 +64,9 @@ export default function TodayScreen() {
 
   const getCurrentDateTasks = () => {
     const dateKey = getDateKey(currentDate);
-    return tasks.filter(task => task.dateKey === dateKey);
+    return tasks
+      .filter(task => task.dateKey === dateKey)
+      .sort((a, b) => a.order - b.order); // Sort by order for consistent display
   };
 
   // Enhanced progress calculation that includes subtasks
@@ -110,6 +113,11 @@ export default function TodayScreen() {
     setNewTaskTitle('');
   };
 
+  const getNextOrder = () => {
+    const currentTasks = getCurrentDateTasks();
+    return currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.order)) + 1 : 0;
+  };
+
   const addSimpleTask = () => {
     if (!newTaskTitle.trim()) {
       Alert.alert('Error', 'Please enter a task title');
@@ -122,6 +130,7 @@ export default function TodayScreen() {
       completed: false,
       dateKey: getDateKey(currentDate),
       isComplex: false,
+      order: getNextOrder(),
     };
 
     setTasks(prev => [...prev, newTask]);
@@ -146,6 +155,7 @@ export default function TodayScreen() {
       startTime: taskData.startTime || undefined,
       duration: taskData.duration || undefined,
       isComplex: true,
+      order: getNextOrder(),
     };
 
     setTasks(prev => [...prev, newTask]);
@@ -205,6 +215,20 @@ export default function TodayScreen() {
     setTasks(prev => prev.filter(task => task.id !== taskId));
   };
 
+  const handleDragEnd = ({ data }: { data: Task[] }) => {
+    // Update the order of tasks based on their new positions
+    const updatedTasks = data.map((task, index) => ({
+      ...task,
+      order: index
+    }));
+
+    // Update the tasks state with reordered tasks
+    setTasks(prev => {
+      const otherDateTasks = prev.filter(task => task.dateKey !== getDateKey(currentDate));
+      return [...otherDateTasks, ...updatedTasks];
+    });
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
@@ -215,6 +239,18 @@ export default function TodayScreen() {
 
   const currentDateTasks = getCurrentDateTasks();
   const progress = calculateProgress();
+
+  const renderTaskItem = ({ item, drag, isActive }: RenderItemParams<Task>) => (
+    <TaskCard
+      task={item}
+      onToggle={() => toggleTask(item.id)}
+      onToggleSubtask={(subtaskId) => toggleSubtask(item.id, subtaskId)}
+      onDelete={() => deleteTask(item.id)}
+      formatTime={formatTime}
+      drag={drag}
+      isActive={isActive}
+    />
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -283,7 +319,7 @@ export default function TodayScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.content}>
         {/* Add Task Section */}
         <View style={styles.addSection}>
           {!showSimpleInput ? (
@@ -354,20 +390,16 @@ export default function TodayScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.tasksList}>
-            {currentDateTasks.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onToggle={() => toggleTask(task.id)}
-                onToggleSubtask={(subtaskId) => toggleSubtask(task.id, subtaskId)}
-                onDelete={() => deleteTask(task.id)}
-                formatTime={formatTime}
-              />
-            ))}
-          </View>
+          <DraggableFlatList
+            data={currentDateTasks}
+            onDragEnd={handleDragEnd}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTaskItem}
+            contentContainerStyle={styles.tasksList}
+            showsVerticalScrollIndicator={false}
+          />
         )}
-      </ScrollView>
+      </View>
 
       {/* Complex Task Form Modal */}
       <Modal
@@ -389,13 +421,17 @@ function TaskCard({
   onToggle, 
   onToggleSubtask, 
   onDelete, 
-  formatTime 
+  formatTime,
+  drag,
+  isActive
 }: { 
   task: Task; 
   onToggle: () => void; 
   onToggleSubtask: (subtaskId: string) => void;
   onDelete: () => void;
   formatTime: (date: Date) => string;
+  drag: () => void;
+  isActive: boolean;
 }) {
   const completedSubtasks = task.subtasks?.filter(subtask => subtask.completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
@@ -411,11 +447,25 @@ function TaskCard({
   const taskProgress = getTaskProgress();
 
   return (
-    <View style={styles.taskCard}>
+    <TouchableOpacity 
+      style={[
+        styles.taskCard,
+        isActive && styles.taskCardDragging
+      ]}
+      onLongPress={drag}
+      disabled={isActive}
+      activeOpacity={0.8}
+    >
+      {/* Drag Handle */}
+      <View style={styles.dragHandle}>
+        <GripVertical size={16} color="#D1D5DB" strokeWidth={2} />
+      </View>
+
       <TouchableOpacity
         style={styles.taskContent}
         onPress={onToggle}
         activeOpacity={0.7}
+        disabled={isActive}
       >
         <View style={styles.checkboxContainer}>
           <View style={[
@@ -490,6 +540,7 @@ function TaskCard({
                   style={styles.subtaskItem}
                   onPress={() => onToggleSubtask(subtask.id)}
                   activeOpacity={0.7}
+                  disabled={isActive}
                 >
                   <View style={[
                     styles.subtaskCheckbox,
@@ -516,10 +567,11 @@ function TaskCard({
         style={styles.deleteButton}
         onPress={onDelete}
         activeOpacity={0.7}
+        disabled={isActive}
       >
         <Trash2 size={16} color="#EF4444" strokeWidth={2} />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -754,7 +806,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   tasksList: {
-    gap: 8,
+    paddingBottom: 100, // Add padding for tab bar
   },
   taskCard: {
     backgroundColor: '#FFFFFF',
@@ -769,6 +821,22 @@ const styles = StyleSheet.create({
     elevation: 1,
     borderWidth: 1,
     borderColor: '#F3F4F6',
+    marginBottom: 8,
+  },
+  taskCardDragging: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    transform: [{ scale: 1.02 }],
+    backgroundColor: '#FEFEFE',
+  },
+  dragHandle: {
+    paddingRight: 12,
+    paddingTop: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   taskContent: {
     flex: 1,
