@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   Modal,
 } from 'react-native';
-import { X, Target, SquareCheck as CheckSquare, Calendar, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { X, Target, SquareCheck as CheckSquare, Calendar, Plus, Trash2, ChevronLeft, ChevronRight, Clock } from 'lucide-react-native';
 
 interface Goal {
   id: string;
@@ -26,6 +26,7 @@ interface Goal {
   linkedTasks?: string[];
   // Common fields
   deadline?: Date;
+  timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
   category: string;
   customCategory?: string;
   color: string;
@@ -48,12 +49,55 @@ const DEFAULT_CATEGORIES = [
   { name: 'Fitness', color: '#84CC16' },
 ];
 
+const TIMEFRAME_OPTIONS = [
+  { 
+    id: 'weekly', 
+    label: 'Weekly', 
+    description: 'Complete within this week',
+    color: '#EF4444',
+    icon: '📅'
+  },
+  { 
+    id: 'monthly', 
+    label: 'Monthly', 
+    description: 'Complete within this month',
+    color: '#F59E0B',
+    icon: '🗓️'
+  },
+  { 
+    id: 'quarterly', 
+    label: 'Quarterly', 
+    description: 'Complete within 3 months',
+    color: '#8B5CF6',
+    icon: '📊'
+  },
+  { 
+    id: 'yearly', 
+    label: 'Yearly', 
+    description: 'Complete within this year',
+    color: '#06B6D4',
+    icon: '🎯'
+  },
+  { 
+    id: 'custom', 
+    label: 'Custom Date', 
+    description: 'Set your own deadline',
+    color: '#6B7280',
+    icon: '⚙️'
+  },
+];
+
 export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalFormProps) {
   // Basic fields
   const [title, setTitle] = useState(goal?.title || '');
   const [description, setDescription] = useState(goal?.description || '');
   const [goalType, setGoalType] = useState<'quantifiable' | 'non-quantifiable'>(
     goal?.type || 'quantifiable'
+  );
+
+  // Timeframe selection
+  const [timeframe, setTimeframe] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom'>(
+    goal?.timeframe || 'monthly'
   );
 
   // Quantifiable goal fields
@@ -81,6 +125,55 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
   ];
 
   const selectedCategoryData = allCategories.find(cat => cat.name === selectedCategory) || DEFAULT_CATEGORIES[0];
+  const selectedTimeframeData = TIMEFRAME_OPTIONS.find(tf => tf.id === timeframe) || TIMEFRAME_OPTIONS[1];
+
+  // Calculate automatic deadline based on timeframe
+  const getAutomaticDeadline = (selectedTimeframe: string): Date => {
+    const now = new Date();
+    
+    switch (selectedTimeframe) {
+      case 'weekly':
+        // End of current week (Sunday)
+        const endOfWeek = new Date(now);
+        endOfWeek.setDate(now.getDate() + (7 - now.getDay()));
+        endOfWeek.setHours(23, 59, 59, 999);
+        return endOfWeek;
+        
+      case 'monthly':
+        // End of current month
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+        return endOfMonth;
+        
+      case 'quarterly':
+        // End of current quarter
+        const currentQuarter = Math.floor(now.getMonth() / 3);
+        const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0);
+        endOfQuarter.setHours(23, 59, 59, 999);
+        return endOfQuarter;
+        
+      case 'yearly':
+        // End of current year
+        const endOfYear = new Date(now.getFullYear(), 11, 31);
+        endOfYear.setHours(23, 59, 59, 999);
+        return endOfYear;
+        
+      default:
+        return now;
+    }
+  };
+
+  const handleTimeframeChange = (newTimeframe: string) => {
+    setTimeframe(newTimeframe as any);
+    
+    if (newTimeframe !== 'custom') {
+      // Automatically set deadline based on timeframe
+      setDeadline(getAutomaticDeadline(newTimeframe));
+    } else {
+      // For custom, clear deadline so user can set their own
+      setDeadline(null);
+    }
+  };
 
   const handleCategorySelect = (categoryName: string) => {
     if (categoryName === 'Custom...') {
@@ -154,6 +247,11 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       }
     }
 
+    if (timeframe === 'custom' && !deadline) {
+      Alert.alert('Error', 'Please set a deadline for custom timeframe');
+      return false;
+    }
+
     if (showCustomCategory && !customCategory.trim()) {
       Alert.alert('Error', 'Please enter a custom category name or select an existing category');
       return false;
@@ -172,6 +270,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       title: title.trim(),
       description: description.trim(),
       type: goalType,
+      timeframe,
       category: finalCategory,
       customCategory: showCustomCategory ? customCategory.trim() : undefined,
       color: finalCategoryColor,
@@ -208,6 +307,83 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Timeframe Selection - Top Priority */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Goal Timeframe *</Text>
+          <Text style={styles.helpText}>When do you want to achieve this goal?</Text>
+          
+          <View style={styles.timeframeContainer}>
+            {TIMEFRAME_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.timeframeOption,
+                  { borderColor: option.color + '40' },
+                  timeframe === option.id && { 
+                    borderColor: option.color,
+                    backgroundColor: option.color + '10'
+                  }
+                ]}
+                onPress={() => handleTimeframeChange(option.id)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.timeframeHeader}>
+                  <Text style={styles.timeframeIcon}>{option.icon}</Text>
+                  <Text style={[
+                    styles.timeframeLabel,
+                    { color: option.color },
+                    timeframe === option.id && styles.timeframeLabelSelected
+                  ]}>
+                    {option.label}
+                  </Text>
+                </View>
+                <Text style={styles.timeframeDescription}>
+                  {option.description}
+                </Text>
+                {timeframe === option.id && deadline && (
+                  <View style={styles.timeframeDeadline}>
+                    <Calendar size={12} color={option.color} strokeWidth={2} />
+                    <Text style={[styles.timeframeDeadlineText, { color: option.color }]}>
+                      Due: {formatDate(deadline)}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Custom Date Selection - Only show for custom timeframe */}
+        {timeframe === 'custom' && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Custom Deadline *</Text>
+            {deadline ? (
+              <View style={styles.deadlineContainer}>
+                <View style={styles.deadlineDisplay}>
+                  <Calendar size={16} color="#4F46E5" strokeWidth={2} />
+                  <Text style={styles.deadlineText}>{formatDate(deadline)}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.deadlineAction}
+                  onPress={clearDeadline}
+                  activeOpacity={0.7}
+                >
+                  <Trash2 size={14} color="#EF4444" strokeWidth={2} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.deadlineButton}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Calendar size={16} color="#6B7280" strokeWidth={2} />
+                <Text style={styles.deadlineButtonText}>Set custom deadline</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Goal Title */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Goal Title *</Text>
@@ -355,35 +531,6 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
           </View>
         )}
 
-        {/* Deadline */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Deadline</Text>
-          {deadline ? (
-            <View style={styles.deadlineContainer}>
-              <View style={styles.deadlineDisplay}>
-                <Calendar size={16} color="#4F46E5" strokeWidth={2} />
-                <Text style={styles.deadlineText}>{formatDate(deadline)}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.deadlineAction}
-                onPress={clearDeadline}
-                activeOpacity={0.7}
-              >
-                <Trash2 size={14} color="#EF4444" strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.deadlineButton}
-              onPress={() => setShowDatePicker(true)}
-              activeOpacity={0.7}
-            >
-              <Calendar size={16} color="#6B7280" strokeWidth={2} />
-              <Text style={styles.deadlineButtonText}>Set deadline (optional)</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
         {/* Category Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Category</Text>
@@ -464,8 +611,8 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
         </TouchableOpacity>
       </View>
 
-      {/* Date Picker Modal */}
-      <DatePickerModal
+      {/* Enhanced Date Picker Modal */}
+      <EnhancedDatePickerModal
         visible={showDatePicker}
         onClose={() => setShowDatePicker(false)}
         onDateSelect={handleDateSelect}
@@ -475,7 +622,7 @@ export default function GoalForm({ goal, onSave, onCancel, isEditing }: GoalForm
   );
 }
 
-function DatePickerModal({ 
+function EnhancedDatePickerModal({ 
   visible, 
   onClose, 
   onDateSelect, 
@@ -491,6 +638,10 @@ function DatePickerModal({
   const [currentMonth, setCurrentMonth] = useState(
     new Date(currentDate?.getFullYear() || today.getFullYear(), currentDate?.getMonth() || today.getMonth(), 1)
   );
+  const [selectedYear, setSelectedYear] = useState(currentDate?.getFullYear() || today.getFullYear());
+
+  // Generate years from current year to 10 years in the future
+  const availableYears = Array.from({ length: 11 }, (_, i) => today.getFullYear() + i);
 
   const formatMonth = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -530,6 +681,13 @@ function DatePickerModal({
       newMonth.setMonth(newMonth.getMonth() + 1);
     }
     setCurrentMonth(newMonth);
+    setSelectedYear(newMonth.getFullYear());
+  };
+
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+    const newMonth = new Date(year, currentMonth.getMonth(), 1);
+    setCurrentMonth(newMonth);
   };
 
   const isToday = (date: Date | null) => {
@@ -561,6 +719,7 @@ function DatePickerModal({
     const todayDate = new Date();
     setSelectedDate(todayDate);
     setCurrentMonth(new Date(todayDate.getFullYear(), todayDate.getMonth(), 1));
+    setSelectedYear(todayDate.getFullYear());
   };
 
   const days = getDaysInMonth(currentMonth);
@@ -581,6 +740,36 @@ function DatePickerModal({
             <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
               <X size={20} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
+          </View>
+
+          {/* Year Selection */}
+          <View style={styles.yearSelectionContainer}>
+            <Text style={styles.yearSelectionLabel}>Year</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              style={styles.yearScroll}
+              contentContainerStyle={styles.yearScrollContent}
+            >
+              {availableYears.map((year) => (
+                <TouchableOpacity
+                  key={year}
+                  style={[
+                    styles.yearOption,
+                    selectedYear === year && styles.selectedYearOption
+                  ]}
+                  onPress={() => handleYearChange(year)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[
+                    styles.yearOptionText,
+                    selectedYear === year && styles.selectedYearOptionText
+                  ]}>
+                    {year}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
 
           {/* Calendar Navigation */}
@@ -611,6 +800,7 @@ function DatePickerModal({
               onPress={goToToday}
               activeOpacity={0.8}
             >
+              <Clock size={12} color="#4F46E5" strokeWidth={2} />
               <Text style={styles.todayButtonText}>Go to Today</Text>
             </TouchableOpacity>
           </View>
@@ -750,6 +940,50 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
     marginBottom: 8,
+  },
+  // Timeframe Selection Styles
+  timeframeContainer: {
+    gap: 8,
+    marginTop: 8,
+  },
+  timeframeOption: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 16,
+  },
+  timeframeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  timeframeIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  timeframeLabel: {
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+  },
+  timeframeLabelSelected: {
+    fontFamily: 'Inter-Bold',
+  },
+  timeframeDescription: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6B7280',
+    marginLeft: 24,
+  },
+  timeframeDeadline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginLeft: 24,
+  },
+  timeframeDeadlineText: {
+    fontSize: 11,
+    fontFamily: 'Inter-SemiBold',
+    marginLeft: 4,
   },
   goalTypeContainer: {
     gap: 12,
@@ -937,7 +1171,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#FFFFFF',
   },
-  // Date Picker Modal Styles
+  // Enhanced Date Picker Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -947,7 +1181,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -966,6 +1200,48 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
+  },
+  yearSelectionContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
+  },
+  yearSelectionLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6B7280',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  yearScroll: {
+    maxHeight: 40,
+  },
+  yearScrollContent: {
+    paddingRight: 20,
+  },
+  yearOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  selectedYearOption: {
+    backgroundColor: '#4F46E5',
+    borderColor: '#4F46E5',
+  },
+  yearOptionText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+  },
+  selectedYearOptionText: {
+    color: '#FFFFFF',
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -993,6 +1269,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#EEF2FF',
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -1004,6 +1282,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
     color: '#4F46E5',
+    marginLeft: 4,
   },
   weekDaysContainer: {
     flexDirection: 'row',

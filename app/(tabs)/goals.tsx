@@ -10,7 +10,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3 } from 'lucide-react-native';
+import { Target, Plus, ChevronRight, Calendar, Check, Trash2, CreditCard as Edit3, Clock } from 'lucide-react-native';
 import GoalForm from '@/components/GoalForm';
 
 interface Goal {
@@ -26,6 +26,7 @@ interface Goal {
   linkedTasks?: string[];
   // Common fields
   deadline?: Date;
+  timeframe: 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
   category: string;
   customCategory?: string;
   color: string;
@@ -34,6 +35,22 @@ interface Goal {
 }
 
 type ModalState = 'none' | 'create' | 'edit';
+
+const TIMEFRAME_COLORS = {
+  weekly: '#EF4444',
+  monthly: '#F59E0B',
+  quarterly: '#8B5CF6',
+  yearly: '#06B6D4',
+  custom: '#6B7280',
+};
+
+const TIMEFRAME_LABELS = {
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  quarterly: 'Quarterly',
+  yearly: 'Yearly',
+  custom: 'Custom',
+};
 
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -104,8 +121,18 @@ export default function GoalsScreen() {
     }));
   };
 
-  const activeGoals = goals.filter(goal => !goal.isCompleted);
-  const completedGoals = goals.filter(goal => goal.isCompleted);
+  // Group goals by timeframe
+  const groupedGoals = goals.reduce((acc, goal) => {
+    if (!acc[goal.timeframe]) {
+      acc[goal.timeframe] = [];
+    }
+    acc[goal.timeframe].push(goal);
+    return acc;
+  }, {} as Record<string, Goal[]>);
+
+  // Sort timeframes by priority
+  const timeframeOrder = ['weekly', 'monthly', 'quarterly', 'yearly', 'custom'];
+  const sortedTimeframes = timeframeOrder.filter(timeframe => groupedGoals[timeframe]?.length > 0);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -150,49 +177,64 @@ export default function GoalsScreen() {
           </View>
         ) : (
           <>
-            {/* Active Goals Section */}
-            {activeGoals.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Active Goals</Text>
-                  <View style={styles.sectionBadge}>
-                    <Text style={styles.sectionBadgeText}>{activeGoals.length}</Text>
+            {/* Goals grouped by timeframe */}
+            {sortedTimeframes.map((timeframe) => {
+              const timeframeGoals = groupedGoals[timeframe];
+              const activeGoals = timeframeGoals.filter(goal => !goal.isCompleted);
+              const completedGoals = timeframeGoals.filter(goal => goal.isCompleted);
+              
+              return (
+                <View key={timeframe} style={styles.timeframeSection}>
+                  <View style={styles.timeframeSectionHeader}>
+                    <View style={styles.timeframeTitleContainer}>
+                      <View style={[
+                        styles.timeframeIndicator, 
+                        { backgroundColor: TIMEFRAME_COLORS[timeframe as keyof typeof TIMEFRAME_COLORS] }
+                      ]} />
+                      <Text style={styles.timeframeSectionTitle}>
+                        {TIMEFRAME_LABELS[timeframe as keyof typeof TIMEFRAME_LABELS]} Goals
+                      </Text>
+                    </View>
+                    <View style={styles.timeframeBadge}>
+                      <Text style={styles.timeframeBadgeText}>
+                        {activeGoals.length} active
+                      </Text>
+                    </View>
                   </View>
+
+                  {/* Active Goals */}
+                  {activeGoals.map((goal) => (
+                    <GoalCard 
+                      key={goal.id} 
+                      goal={goal} 
+                      onEdit={() => openEditModal(goal)}
+                      onDelete={() => handleDeleteGoal(goal.id)}
+                      onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
+                    />
+                  ))}
+
+                  {/* Completed Goals */}
+                  {completedGoals.length > 0 && (
+                    <>
+                      <View style={styles.completedSectionHeader}>
+                        <Text style={styles.completedSectionTitle}>
+                          Completed ({completedGoals.length})
+                        </Text>
+                      </View>
+                      {completedGoals.map((goal) => (
+                        <GoalCard 
+                          key={goal.id} 
+                          goal={goal} 
+                          onEdit={() => openEditModal(goal)}
+                          onDelete={() => handleDeleteGoal(goal.id)}
+                          onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
+                        />
+                      ))}
+                    </>
+                  )}
                 </View>
-
-                {activeGoals.map((goal) => (
-                  <GoalCard 
-                    key={goal.id} 
-                    goal={goal} 
-                    onEdit={() => openEditModal(goal)}
-                    onDelete={() => handleDeleteGoal(goal.id)}
-                    onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
-                  />
-                ))}
-              </View>
-            )}
-
-            {/* Completed Goals Section */}
-            {completedGoals.length > 0 && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Completed Goals</Text>
-                  <View style={styles.sectionBadge}>
-                    <Text style={styles.sectionBadgeText}>{completedGoals.length}</Text>
-                  </View>
-                </View>
-
-                {completedGoals.map((goal) => (
-                  <GoalCard 
-                    key={goal.id} 
-                    goal={goal} 
-                    onEdit={() => openEditModal(goal)}
-                    onDelete={() => handleDeleteGoal(goal.id)}
-                    onProgressUpdate={(newProgress) => handleProgressUpdate(goal.id, newProgress)}
-                  />
-                ))}
-              </View>
-            )}
+              );
+            })}
           </>
         )}
       </ScrollView>
@@ -271,6 +313,15 @@ function GoalCard({
     });
   };
 
+  const getDaysUntilDeadline = (deadline: Date) => {
+    const today = new Date();
+    const diffTime = deadline.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const timeframeColor = TIMEFRAME_COLORS[goal.timeframe as keyof typeof TIMEFRAME_COLORS];
+
   return (
     <View style={styles.goalCard}>
       <View style={styles.goalHeader}>
@@ -280,9 +331,9 @@ function GoalCard({
             <Text style={[styles.goalTitle, goal.isCompleted && styles.completedText]}>
               {goal.title}
             </Text>
-            <View style={styles.goalTypeBadge}>
-              <Text style={styles.goalTypeBadgeText}>
-                {goal.type === 'quantifiable' ? 'Quantifiable' : 'Task-based'}
+            <View style={[styles.goalTypeBadge, { backgroundColor: timeframeColor + '20' }]}>
+              <Text style={[styles.goalTypeBadgeText, { color: timeframeColor }]}>
+                {TIMEFRAME_LABELS[goal.timeframe as keyof typeof TIMEFRAME_LABELS]}
               </Text>
             </View>
           </View>
@@ -370,6 +421,14 @@ function GoalCard({
           <View style={styles.dueDateContainer}>
             <Calendar size={12} color="#9CA3AF" strokeWidth={2} />
             <Text style={styles.dueDate}>{formatDeadline(goal.deadline)}</Text>
+            {!goal.isCompleted && (
+              <View style={styles.daysLeftContainer}>
+                <Clock size={10} color="#6B7280" strokeWidth={2} />
+                <Text style={styles.daysLeftText}>
+                  {getDaysUntilDeadline(goal.deadline)} days left
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -484,30 +543,51 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginLeft: 6,
   },
-  section: {
-    marginBottom: 28,
+  timeframeSection: {
+    marginBottom: 32,
   },
-  sectionHeader: {
+  timeframeSectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
+  timeframeTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeframeIndicator: {
+    width: 4,
+    height: 20,
+    borderRadius: 2,
+    marginRight: 12,
+  },
+  timeframeSectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
     color: '#1F2937',
   },
-  sectionBadge: {
+  timeframeBadge: {
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
   },
-  sectionBadgeText: {
+  timeframeBadgeText: {
     fontSize: 12,
-    fontFamily: 'Inter-Medium',
+    fontFamily: 'Inter-SemiBold',
     color: '#6B7280',
+  },
+  completedSectionHeader: {
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  completedSectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   goalCard: {
     backgroundColor: '#FFFFFF',
@@ -554,15 +634,13 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   goalTypeBadge: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   goalTypeBadgeText: {
-    fontSize: 9,
-    fontFamily: 'Inter-SemiBold',
-    color: '#6B7280',
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -651,12 +729,27 @@ const styles = StyleSheet.create({
   dueDateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   dueDate: {
     fontSize: 11,
     fontFamily: 'Inter-Medium',
     color: '#9CA3AF',
-    marginLeft: 4,
+  },
+  daysLeftContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginLeft: 6,
+  },
+  daysLeftText: {
+    fontSize: 9,
+    fontFamily: 'Inter-SemiBold',
+    color: '#92400E',
+    marginLeft: 2,
   },
   completedBadge: {
     flexDirection: 'row',
