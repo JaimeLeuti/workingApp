@@ -12,26 +12,26 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 0,
-          paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-          paddingTop: 12,
-          height: Platform.OS === 'ios' ? 88 : 72,
+          paddingBottom: Platform.OS === 'ios' ? 20 : 8, // Reduced bottom padding
+          paddingTop: 8, // Reduced top padding
+          height: Platform.OS === 'ios' ? 72 : 56, // Reduced height
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
           elevation: 8,
           position: 'absolute',
-          bottom: 0,
+          bottom: Platform.OS === 'ios' ? 8 : 0, // Add bottom margin on iOS
           left: 0,
           right: 0,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontFamily: 'Inter-Medium',
-          marginTop: 4,
+          marginTop: 2, // Reduced margin
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 2, // Reduced margin
         },
       }}>
       <Tabs.Screen
