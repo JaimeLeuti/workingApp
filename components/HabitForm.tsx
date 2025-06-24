@@ -118,17 +118,21 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isEditing ? 'Edit Habit' : 'Create New Habit'}
-        </Text>
-        <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
-          <X size={20} color="#6B7280" strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.wrapper}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>
+            {isEditing ? 'Edit Habit' : 'Create New Habit'}
+          </Text>
+          <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
+            <X size={20} color="#6B7280" strokeWidth={2} />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.mainContainer}>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Habit Name *</Text>
             <TextInput
@@ -636,6 +640,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  wrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -658,14 +667,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mainContainer: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-  },
   content: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   section: {
     paddingVertical: 16,
@@ -871,6 +878,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     backgroundColor: '#FFFFFF',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   cancelButton: {
     flex: 1,
