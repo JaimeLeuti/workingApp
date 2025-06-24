@@ -9,14 +9,7 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { 
-  Plus, 
-  Calendar, 
-  TrendingUp, 
-  CheckSquare,
-  Flame,
-  Target
-} from 'lucide-react-native';
+import { Plus, Calendar, TrendingUp, SquareCheck as CheckSquare, Flame, Target } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Habit, HabitEntry, HabitStats } from '@/types/habit';
 import { habitStorage } from '@/utils/habitStorage';

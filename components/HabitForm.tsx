@@ -11,16 +11,7 @@ import {
   SafeAreaView,
   Modal,
 } from 'react-native';
-import { 
-  X, 
-  Clock, 
-  ChevronDown, 
-  Target, 
-  CheckSquare,
-  Bell,
-  MessageCircle,
-  Palette
-} from 'lucide-react-native';
+import { X, Clock, ChevronDown, Target, SquareCheck as CheckSquare, Bell, MessageCircle, Palette } from 'lucide-react-native';
 import { Habit } from '@/types/habit';
 import DayPicker from './DayPicker';
 

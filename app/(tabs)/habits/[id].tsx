@@ -8,13 +8,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { 
-  ArrowLeft, 
-  Edit3, 
-  Trash2, 
-  MoreVertical,
-  Archive
-} from 'lucide-react-native';
+import { ArrowLeft, CreditCard as Edit3, Trash2, MoveVertical as MoreVertical, Archive } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Habit } from '@/types/habit';
 import { habitStorage } from '@/utils/habitStorage';

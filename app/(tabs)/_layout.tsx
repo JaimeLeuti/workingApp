@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { CircleCheck as CheckCircle2, Target, CheckSquare, User } from 'lucide-react-native';
+import { CircleCheck as CheckCircle2, Target, SquareCheck as CheckSquare, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
