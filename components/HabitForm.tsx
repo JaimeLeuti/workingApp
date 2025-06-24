@@ -355,6 +355,7 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
         </View>
       </ScrollView>
 
+      {/* Action Buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.cancelButton}
@@ -374,6 +375,7 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
         </TouchableOpacity>
       </View>
 
+      {/* Time Picker Modal */}
       <SimpleTimePickerModal
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
@@ -387,7 +389,7 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
   );
 }
 
-// Reuse the SimpleTimePickerModal from ComplexTaskForm
+// Time Picker Modal Component
 function SimpleTimePickerModal({ 
   visible, 
   onClose, 
@@ -863,7 +865,6 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
   },
   cancelButton: {
     flex: 1,
@@ -879,6 +880,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
+    backgroundColor: '#4F46E5',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
