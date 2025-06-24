@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; [cite: 1]
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,102 +10,111 @@ import {
   Platform,
   SafeAreaView,
   Modal,
-} from 'react-native'; [cite: 1]
-import { X, Clock, ChevronDown, Target, SquareCheck as CheckSquare, Bell, MessageCircle, Palette } from 'lucide-react-native'; [cite: 2]
-import { Habit } from '@/types/habit'; [cite: 3]
+} from 'react-native';
+import {
+  X,
+  Clock,
+  ChevronDown,
+  Target,
+  SquareCheck as CheckSquare,
+  Bell,
+  MessageCircle,
+  Palette
+} from 'lucide-react-native';
+import { Habit } from '@/types/habit';
 import DayPicker from './DayPicker';
 
 interface HabitFormProps {
   habit?: Habit;
-  onSave: (habitData: Omit<Habit, 'id' | 'createdAt'>) => void; [cite: 4]
+  onSave: (habitData: Omit<Habit, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
   isEditing?: boolean;
 }
 
 const HABIT_COLORS = [
-  '#4F46E5', // Indigo
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#8B5CF6', // Violet
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#F97316', // Orange
-  '#EC4899', // Pink
-  '#6B7280', // Gray
+  '#4F46E5',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#06B6D4',
+  '#84CC16',
+  '#F97316',
+  '#EC4899',
+  '#6B7280',
 ];
+
 const HABIT_ICONS = [
-  '💪', '🏃', '📚', '🧘', '💧', '🥗', '😴', '🎯', 
+  '💪', '🏃', '📚', '🧘', '💧', '🥗', '😴', '🎯',
   '✍️', '🎵', '🎨', '🌱', '🏠', '💼', '❤️', '🧠'
-]; [cite: 6]
+];
+
 const FREQUENCY_OPTIONS = [
   { id: 'daily', label: 'Daily', description: 'Every day' },
   { id: 'weekly', label: 'Weekly', description: 'Once per week' },
   { id: 'custom', label: 'Custom', description: 'Specific days' },
-]; [cite: 7]
-export default function HabitForm({ habit, onSave, onCancel, isEditing = false }: HabitFormProps) { [cite: 8]
+];
+
+export default function HabitForm({ habit, onSave, onCancel, isEditing = false }: HabitFormProps) {
   const [name, setName] = useState(habit?.name || '');
-  const [type, setType] = useState<'boolean' | 'measurable'>(habit?.type || 'boolean'); [cite: 9]
+  const [type, setType] = useState<'boolean' | 'measurable'>(habit?.type || 'boolean');
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'custom'>(habit?.frequency || 'daily');
-  const [customDays, setCustomDays] = useState<number[]>(habit?.customDays || []); [cite: 10]
+  const [customDays, setCustomDays] = useState<number[]>(habit?.customDays || []);
   const [reminderTime, setReminderTime] = useState<Date | null>(habit?.reminderTime || null);
-  const [motivationalQuestion, setMotivationalQuestion] = useState(habit?.motivationalQuestion || ''); [cite: 11]
+  const [motivationalQuestion, setMotivationalQuestion] = useState(habit?.motivationalQuestion || '');
   const [selectedColor, setSelectedColor] = useState(habit?.color || HABIT_COLORS[0]);
-  const [selectedIcon, setSelectedIcon] = useState(habit?.icon || HABIT_ICONS[0]); [cite: 12]
+  const [selectedIcon, setSelectedIcon] = useState(habit?.icon || HABIT_ICONS[0]);
   const [targetValue, setTargetValue] = useState(habit?.targetValue?.toString() || '');
-  const [unit, setUnit] = useState(habit?.unit || ''); [cite: 13]
+  const [unit, setUnit] = useState(habit?.unit || '');
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const handleSave = () => { [cite: 14]
+
+  const handleSave = () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Please enter a habit name');
-      return; [cite: 15]
+      return;
     }
 
     if (frequency === 'custom' && customDays.length === 0) {
       Alert.alert('Error', 'Please select at least one day for custom frequency');
-      return; [cite: 16]
+      return;
     }
 
     if (type === 'measurable') {
       const target = parseFloat(targetValue);
-      if (!targetValue || isNaN(target) || target <= 0) { [cite: 17]
+      if (!targetValue || isNaN(target) || target <= 0) {
         Alert.alert('Error', 'Please enter a valid target value');
-        return; [cite: 18]
+        return;
       }
       if (!unit.trim()) {
         Alert.alert('Error', 'Please enter a unit of measurement');
-        return; [cite: 19]
+        return;
       }
     }
 
-    const habitData: Omit<Habit, 'id' |
- 'createdAt'> = { [cite: 20]
+    const habitData: Omit<Habit, 'id' | 'createdAt'> = {
       name: name.trim(),
       type,
       frequency,
-      customDays: frequency === 'custom' ?
- customDays : undefined, [cite: 21]
+      customDays: frequency === 'custom' ? customDays : undefined,
       reminderTime,
-      motivationalQuestion: motivationalQuestion.trim() ||
- undefined, [cite: 22]
+      motivationalQuestion: motivationalQuestion.trim() || undefined,
       color: selectedColor,
       icon: selectedIcon,
-      targetValue: type === 'measurable' ?
- parseFloat(targetValue) : undefined, [cite: 23]
-      unit: type === 'measurable' ?
- unit.trim() : undefined, [cite: 24]
+      targetValue: type === 'measurable' ? parseFloat(targetValue) : undefined,
+      unit: type === 'measurable' ? unit.trim() : undefined,
       isActive: true,
     };
 
     onSave(habitData);
   };
-  const formatTime = (date: Date) => { [cite: 25]
+
+  const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     });
-  }; [cite: 26]
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,98 +128,86 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-     
-        {/* Habit Name */}
-        <View style={styles.section}> 
+        <View style={styles.section}>
           <Text style={styles.sectionLabel}>Habit Name *</Text>
           <TextInput
             style={styles.input}
             placeholder="What habit do you want to build?"
             placeholderTextColor="#9CA3AF"
             value={name}
-        
-            [cite_start]onChangeText={setName} [cite: 28]
+            onChangeText={setName}
             autoFocus
           />
         </View>
 
-        {/* Habit Type */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Tracking Type *</Text>
           <Text style={styles.helpText}>How do you want to track this habit?</Text>
-          
-          <View style={styles.typeContainer}> 
+
+          <View style={styles.typeContainer}>
             <TouchableOpacity
               style={[
                 styles.typeOption,
                 type === 'boolean' && styles.selectedTypeOption
               ]}
               onPress={() => setType('boolean')}
-  
-              activeOpacity={0.7} 
+              activeOpacity={0.7}
             >
-              <CheckSquare 
-                size={20} 
-                color={type === 'boolean' ?
- [cite_start]'#4F46E5' : '#6B7280'} [cite: 31]
-                strokeWidth={2} 
+              <CheckSquare
+                size={20}
+                color={type === 'boolean' ? '#4F46E5' : '#6B7280'}
+                strokeWidth={2}
               />
               <View style={styles.typeContent}>
                 <Text style={[
                   styles.typeTitle,
-                  [cite_start]type === 'boolean' && styles.selectedTypeTitle [cite: 32]
+                  type === 'boolean' && styles.selectedTypeTitle
                 ]}>
                   Yes/No Habit
                 </Text>
                 <Text style={styles.typeDescription}>
                   Simple completion tracking (e.g., "Did I exercise?")
-                </Text> 
+                </Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[
                 styles.typeOption,
-                type === 
- 'measurable' && styles.selectedTypeOption [cite: 34]
+                type === 'measurable' && styles.selectedTypeOption
               ]}
               onPress={() => setType('measurable')}
               activeOpacity={0.7}
             >
-              <Target 
-                size={20} 
-          
-                [cite_start]color={type === 'measurable' ? [cite: 35]
- [cite_start]'#4F46E5' : '#6B7280'} [cite: 36]
-                strokeWidth={2} 
+              <Target
+                size={20}
+                color={type === 'measurable' ? '#4F46E5' : '#6B7280'}
+                strokeWidth={2}
               />
               <View style={styles.typeContent}>
                 <Text style={[
                   styles.typeTitle,
-                  [cite_start]type === 'measurable' && styles.selectedTypeTitle [cite: 37]
+                  type === 'measurable' && styles.selectedTypeTitle
                 ]}>
                   Measurable Habit
                 </Text>
                 <Text style={styles.typeDescription}>
-                  Track with numbers (e.g., "How many minutes did 
- I meditate?") 
+                  Track with numbers (e.g., "How many minutes did I meditate?")
                 </Text>
               </View>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Measurable Habit Fields */}
         {type === 'measurable' && (
           <>
-            <View style={styles.section}> 
+            <View style={styles.section}>
               <Text style={styles.sectionLabel}>Target Value *</Text>
               <TextInput
                 style={styles.input}
                 placeholder="How much do you want to achieve daily?"
                 placeholderTextColor="#9CA3AF"
-      
-                [cite_start]value={targetValue} [cite: 40]
+                value={targetValue}
                 onChangeText={setTargetValue}
                 keyboardType="numeric"
               />
@@ -218,43 +215,40 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
 
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Unit *</Text>
-   
-              <TextInput [cite: 41]
+              <TextInput
                 style={styles.input}
                 placeholder="minutes, steps, pages, etc."
                 placeholderTextColor="#9CA3AF"
                 value={unit}
                 onChangeText={setUnit}
-      
-              [cite_start]/> 
+              />
             </View>
           </>
         )}
 
-        {/* Frequency */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Frequency *</Text>
           <Text style={styles.helpText}>How often do you want to do this habit?</Text>
-          
-          <View style={styles.frequencyContainer}> 
+
+          <View style={styles.frequencyContainer}>
             {FREQUENCY_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.id}
                 style={[
                   styles.frequencyOption,
-                  [cite_start]frequency === option.id && styles.selectedFrequencyOption [cite: 44]
+                  frequency === option.id && styles.selectedFrequencyOption
                 ]}
                 onPress={() => setFrequency(option.id as any)}
                 activeOpacity={0.7}
               >
                 <Text style={[
-                  [cite_start]styles.frequencyLabel, [cite: 45]
+                  styles.frequencyLabel,
                   frequency === option.id && styles.selectedFrequencyLabel
                 ]}>
                   {option.label}
                 </Text>
                 <Text style={styles.frequencyDescription}>
-                  {option.description} 
+                  {option.description}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -262,7 +256,7 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
 
           {frequency === 'custom' && (
             <DayPicker
-              [cite_start]selectedDays={customDays} [cite: 47]
+              selectedDays={customDays}
               onDaysChange={setCustomDays}
             />
           )}
@@ -271,32 +265,29 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
         {/* Reminder Time */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Reminder Time</Text>
-          <Text style={styles.helpText}>Get notified when it's 
- time to complete your habit</Text> 
-          
-          {reminderTime ?
- ( 
+          <Text style={styles.helpText}>Get notified when it's time to complete your habit</Text>
+
+          {reminderTime ? (
             <View style={styles.reminderContainer}>
               <View style={styles.reminderDisplay}>
                 <Bell size={16} color="#4F46E5" strokeWidth={2} />
                 <Text style={styles.reminderText}>{formatTime(reminderTime)}</Text>
               </View>
               <TouchableOpacity
-                [cite_start]style={styles.reminderAction} [cite: 50]
+                style={styles.reminderAction}
                 onPress={() => setReminderTime(null)}
                 activeOpacity={0.7}
               >
                 <X size={14} color="#EF4444" strokeWidth={2} />
               </TouchableOpacity>
-            </View> 
+            </View>
           ) : (
             <TouchableOpacity
               style={styles.reminderButton}
               onPress={() => setShowTimePicker(true)}
               activeOpacity={0.7}
             >
-              <Clock size={16} color="#6B7280" 
- [cite_start]strokeWidth={2} /> 
+              <Clock size={16} color="#6B7280" strokeWidth={2} />
               <Text style={styles.reminderButtonText}>Set reminder time</Text>
               <ChevronDown size={16} color="#6B7280" strokeWidth={2} />
             </TouchableOpacity>
@@ -306,14 +297,13 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
         {/* Motivational Question */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Motivational Question</Text>
-  
-          <Text style={styles.helpText}>A personal question or note to motivate you</Text> 
+          <Text style={styles.helpText}>A personal question or note to motivate you</Text>
           <View style={styles.motivationInputContainer}>
             <MessageCircle size={16} color="#6B7280" strokeWidth={2} />
             <TextInput
               style={styles.motivationInput}
               placeholder="Why is this habit important to you?"
- [cite_start]placeholderTextColor="#9CA3AF" [cite: 54]
+              placeholderTextColor="#9CA3AF"
               value={motivationalQuestion}
               onChangeText={setMotivationalQuestion}
               multiline
@@ -323,28 +313,26 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
 
         {/* Color Selection */}
         <View style={styles.section}>
-        
-          <Text style={styles.sectionLabel}>Color</Text> 
+          <Text style={styles.sectionLabel}>Color</Text>
           <View style={styles.colorContainer}>
             {HABIT_COLORS.map((color) => (
               <TouchableOpacity
                 key={color}
                 style={[
                   styles.colorOption,
-                  [cite_start]{ backgroundColor: color }, [cite: 56]
+                  { backgroundColor: color },
                   selectedColor === color && styles.selectedColorOption
                 ]}
                 onPress={() => setSelectedColor(color)}
                 activeOpacity={0.7}
               >
- 
-                {selectedColor === color && ( 
+                {selectedColor === color && (
                   <Palette size={16} color="#FFFFFF" strokeWidth={2} />
                 )}
               </TouchableOpacity>
             ))}
           </View>
-        </View> 
+        </View>
 
         {/* Icon Selection */}
         <View style={styles.section}>
@@ -353,24 +341,22 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
             {HABIT_ICONS.map((icon) => (
               <TouchableOpacity
                 key={icon}
-                [cite_start]style={[ [cite: 59]
+                style={[
                   styles.iconOption,
                   selectedIcon === icon && styles.selectedIconOption
                 ]}
                 onPress={() => setSelectedIcon(icon)}
                 activeOpacity={0.7}
-       
-              > 
+              >
                 <Text style={styles.iconText}>{icon}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Action Buttons - MOVED TO BE THE LAST ELEMENT IN THE SCROLLVIEW */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            [cite_start]style={styles.cancelButton} [cite: 61]
+            style={styles.cancelButton}
             onPress={onCancel}
             activeOpacity={0.7}
           >
@@ -380,17 +366,14 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
             style={[styles.saveButton, { backgroundColor: selectedColor }]}
             onPress={handleSave}
             activeOpacity={0.8}
-   
-          > 
+          >
             <Text style={styles.saveButtonText}>
-              {isEditing ?
- 'Update Habit' : 'Create Habit'} 
+              {isEditing ? 'Update Habit' : 'Create Habit'}
             </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Time Picker Modal */}
       <SimpleTimePickerModal
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
