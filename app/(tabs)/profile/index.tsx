@@ -9,25 +9,7 @@ import {
   Platform,
   Image,
 } from 'react-native';
-import { 
-  User, 
-  Settings, 
-  Bell, 
-  Shield, 
-  CircleHelp as HelpCircle, 
-  Star, 
-  Award, 
-  TrendingUp, 
-  ChevronRight, 
-  CreditCard as Edit3, 
-  LogOut,
-  Database,
-  Gem,
-  Info,
-  ListChecks,
-  CheckCircle2,
-  Target
-} from 'lucide-react-native';
+import { User, Settings, Bell, Shield, CircleHelp as HelpCircle, Star, Award, TrendingUp, ChevronRight, CreditCard as Edit3, LogOut, Database, Gem, Info, ListChecks, CircleCheck as CheckCircle2, Target } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { habitStorage } from '@/utils/habitStorage';
 

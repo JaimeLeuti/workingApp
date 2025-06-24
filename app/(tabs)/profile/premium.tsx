@@ -9,19 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { 
-  ArrowLeft, 
-  Gem, 
-  Star, 
-  TrendingUp, 
-  BarChart3, 
-  Cloud, 
-  Smartphone,
-  Check,
-  Crown,
-  Zap,
-  Shield
-} from 'lucide-react-native';
+import { ArrowLeft, Gem, Star, TrendingUp, ChartBar as BarChart3, Cloud, Smartphone, Check, Crown, Zap, Shield } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 interface PremiumFeature {

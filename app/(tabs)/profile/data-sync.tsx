@@ -9,18 +9,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { 
-  ArrowLeft, 
-  Download, 
-  Upload, 
-  Archive, 
-  RotateCcw,
-  Database,
-  FileText,
-  Calendar,
-  Target,
-  CheckSquare
-} from 'lucide-react-native';
+import { ArrowLeft, Download, Upload, Archive, RotateCcw, Database, FileText, Calendar, Target, SquareCheck as CheckSquare } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { habitStorage } from '@/utils/habitStorage';
 import { Habit } from '@/types/habit';
