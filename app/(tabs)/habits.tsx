@@ -11,20 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { 
-  Plus, 
-  CheckCircle2, 
-  Circle, 
-  Target, 
-  TrendingUp, 
-  Calendar,
-  Filter,
-  BarChart3,
-  Clock,
-  Edit3,
-  Archive,
-  Trash2
-} from 'lucide-react-native';
+import { Plus, CircleCheck as CheckCircle2, Circle, Target, TrendingUp, Calendar, Filter, ChartBar as BarChart3, Clock, CreditCard as Edit3, Archive, Trash2 } from 'lucide-react-native';
 import HabitForm from '@/components/HabitForm';
 import HabitStats from '@/components/HabitStats';
 import MeasurableHabitInput from '@/components/MeasurableHabitInput';

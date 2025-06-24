@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   Modal,
 } from 'react-native';
-import { X, Target, CheckSquare, Clock, Calendar, ChevronDown } from 'lucide-react-native';
+import { X, Target, SquareCheck as CheckSquare, Clock, Calendar, ChevronDown } from 'lucide-react-native';
 import type { Habit } from '@/app/(tabs)/habits';
 
 interface HabitFormProps {
