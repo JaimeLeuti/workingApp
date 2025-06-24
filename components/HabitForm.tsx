@@ -10,9 +10,6 @@ import {
   Platform,
   SafeAreaView,
   Modal,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
 import {
   X,
@@ -121,271 +118,261 @@ export default function HabitForm({ habit, onSave, onCancel, isEditing = false }
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}
-      >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            {isEditing ? 'Edit Habit' : 'Create New Habit'}
-          </Text>
-          <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
-            <X size={20} color="#6B7280" strokeWidth={2} />
-          </TouchableOpacity>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          {isEditing ? 'Edit Habit' : 'Create New Habit'}
+        </Text>
+        <TouchableOpacity style={styles.closeButton} onPress={onCancel} activeOpacity={0.7}>
+          <X size={20} color="#6B7280" strokeWidth={2} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Habit Name *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="What habit do you want to build?"
+            placeholderTextColor="#9CA3AF"
+            value={name}
+            onChangeText={setName}
+            autoFocus
+          />
         </View>
 
-        <ScrollView
-          style={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Habit Name *</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Tracking Type *</Text>
+          <Text style={styles.helpText}>How do you want to track this habit?</Text>
+
+          <View style={styles.typeContainer}>
+            <TouchableOpacity
+              style={[
+                styles.typeOption,
+                type === 'boolean' && styles.selectedTypeOption
+              ]}
+              onPress={() => setType('boolean')}
+              activeOpacity={0.7}
+            >
+              <CheckSquare
+                size={20}
+                color={type === 'boolean' ? '#4F46E5' : '#6B7280'}
+                strokeWidth={2}
+              />
+              <View style={styles.typeContent}>
+                <Text style={[
+                  styles.typeTitle,
+                  type === 'boolean' && styles.selectedTypeTitle
+                ]}>
+                  Yes/No Habit
+                </Text>
+                <Text style={styles.typeDescription}>
+                  Simple completion tracking (e.g., "Did I exercise?")
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.typeOption,
+                type === 'measurable' && styles.selectedTypeOption
+              ]}
+              onPress={() => setType('measurable')}
+              activeOpacity={0.7}
+            >
+              <Target
+                size={20}
+                color={type === 'measurable' ? '#4F46E5' : '#6B7280'}
+                strokeWidth={2}
+              />
+              <View style={styles.typeContent}>
+                <Text style={[
+                  styles.typeTitle,
+                  type === 'measurable' && styles.selectedTypeTitle
+                ]}>
+                  Measurable Habit
+                </Text>
+                <Text style={styles.typeDescription}>
+                  Track with numbers (e.g., "How many minutes did I meditate?")
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {type === 'measurable' && (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Target Value *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="How much do you want to achieve daily?"
+                placeholderTextColor="#9CA3AF"
+                value={targetValue}
+                onChangeText={setTargetValue}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Unit *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="minutes, steps, pages, etc."
+                placeholderTextColor="#9CA3AF"
+                value={unit}
+                onChangeText={setUnit}
+              />
+            </View>
+          </>
+        )}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Frequency *</Text>
+          <Text style={styles.helpText}>How often do you want to do this habit?</Text>
+
+          <View style={styles.frequencyContainer}>
+            {FREQUENCY_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.frequencyOption,
+                  frequency === option.id && styles.selectedFrequencyOption
+                ]}
+                onPress={() => setFrequency(option.id as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.frequencyLabel,
+                  frequency === option.id && styles.selectedFrequencyLabel
+                ]}>
+                  {option.label}
+                </Text>
+                <Text style={styles.frequencyDescription}>
+                  {option.description}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {frequency === 'custom' && (
+            <DayPicker
+              selectedDays={customDays}
+              onDaysChange={setCustomDays}
+            />
+          )}
+        </View>
+
+        {/* Reminder Time */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Reminder Time</Text>
+          <Text style={styles.helpText}>Get notified when it's time to complete your habit</Text>
+
+          {reminderTime ? (
+            <View style={styles.reminderContainer}>
+              <View style={styles.reminderDisplay}>
+                <Bell size={16} color="#4F46E5" strokeWidth={2} />
+                <Text style={styles.reminderText}>{formatTime(reminderTime)}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.reminderAction}
+                onPress={() => setReminderTime(null)}
+                activeOpacity={0.7}
+              >
+                <X size={14} color="#EF4444" strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.reminderButton}
+              onPress={() => setShowTimePicker(true)}
+              activeOpacity={0.7}
+            >
+              <Clock size={16} color="#6B7280" strokeWidth={2} />
+              <Text style={styles.reminderButtonText}>Set reminder time</Text>
+              <ChevronDown size={16} color="#6B7280" strokeWidth={2} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Motivational Question */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Motivational Question</Text>
+          <Text style={styles.helpText}>A personal question or note to motivate you</Text>
+          <View style={styles.motivationInputContainer}>
+            <MessageCircle size={16} color="#6B7280" strokeWidth={2} />
             <TextInput
-              style={styles.input}
-              placeholder="What habit do you want to build?"
+              style={styles.motivationInput}
+              placeholder="Why is this habit important to you?"
               placeholderTextColor="#9CA3AF"
-              value={name}
-              onChangeText={setName}
-              autoFocus
+              value={motivationalQuestion}
+              onChangeText={setMotivationalQuestion}
+              multiline
             />
           </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Tracking Type *</Text>
-            <Text style={styles.helpText}>How do you want to track this habit?</Text>
-
-            <View style={styles.typeContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.typeOption,
-                  type === 'boolean' && styles.selectedTypeOption
-                ]}
-                onPress={() => setType('boolean')}
-                activeOpacity={0.7}
-              >
-                <CheckSquare
-                  size={20}
-                  color={type === 'boolean' ? '#4F46E5' : '#6B7280'}
-                  strokeWidth={2}
-                />
-                <View style={styles.typeContent}>
-                  <Text style={[
-                    styles.typeTitle,
-                    type === 'boolean' && styles.selectedTypeTitle
-                  ]}>
-                    Yes/No Habit
-                  </Text>
-                  <Text style={styles.typeDescription}>
-                    Simple completion tracking (e.g., "Did I exercise?")
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.typeOption,
-                  type === 'measurable' && styles.selectedTypeOption
-                ]}
-                onPress={() => setType('measurable')}
-                activeOpacity={0.7}
-              >
-                <Target
-                  size={20}
-                  color={type === 'measurable' ? '#4F46E5' : '#6B7280'}
-                  strokeWidth={2}
-                />
-                <View style={styles.typeContent}>
-                  <Text style={[
-                    styles.typeTitle,
-                    type === 'measurable' && styles.selectedTypeTitle
-                  ]}>
-                    Measurable Habit
-                  </Text>
-                  <Text style={styles.typeDescription}>
-                    Track with numbers (e.g., "How many minutes did I meditate?")
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {type === 'measurable' && (
-            <>
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Target Value *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="How much do you want to achieve daily?"
-                  placeholderTextColor="#9CA3AF"
-                  value={targetValue}
-                  onChangeText={setTargetValue}
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Unit *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="minutes, steps, pages, etc."
-                  placeholderTextColor="#9CA3AF"
-                  value={unit}
-                  onChangeText={setUnit}
-                />
-              </View>
-            </>
-          )}
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Frequency *</Text>
-            <Text style={styles.helpText}>How often do you want to do this habit?</Text>
-
-            <View style={styles.frequencyContainer}>
-              {FREQUENCY_OPTIONS.map((option) => (
-                <TouchableOpacity
-                  key={option.id}
-                  style={[
-                    styles.frequencyOption,
-                    frequency === option.id && styles.selectedFrequencyOption
-                  ]}
-                  onPress={() => setFrequency(option.id as any)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[
-                    styles.frequencyLabel,
-                    frequency === option.id && styles.selectedFrequencyLabel
-                  ]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.frequencyDescription}>
-                    {option.description}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {frequency === 'custom' && (
-              <DayPicker
-                selectedDays={customDays}
-                onDaysChange={setCustomDays}
-              />
-            )}
-          </View>
-
-          {/* Reminder Time */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Reminder Time</Text>
-            <Text style={styles.helpText}>Get notified when it's time to complete your habit</Text>
-
-            {reminderTime ? (
-              <View style={styles.reminderContainer}>
-                <View style={styles.reminderDisplay}>
-                  <Bell size={16} color="#4F46E5" strokeWidth={2} />
-                  <Text style={styles.reminderText}>{formatTime(reminderTime)}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.reminderAction}
-                  onPress={() => setReminderTime(null)}
-                  activeOpacity={0.7}
-                >
-                  <X size={14} color="#EF4444" strokeWidth={2} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.reminderButton}
-                onPress={() => setShowTimePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Clock size={16} color="#6B7280" strokeWidth={2} />
-                <Text style={styles.reminderButtonText}>Set reminder time</Text>
-                <ChevronDown size={16} color="#6B7280" strokeWidth={2} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Motivational Question */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Motivational Question</Text>
-            <Text style={styles.helpText}>A personal question or note to motivate you</Text>
-            <View style={styles.motivationInputContainer}>
-              <MessageCircle size={16} color="#6B7280" strokeWidth={2} />
-              <TextInput
-                style={styles.motivationInput}
-                placeholder="Why is this habit important to you?"
-                placeholderTextColor="#9CA3AF"
-                value={motivationalQuestion}
-                onChangeText={setMotivationalQuestion}
-                multiline
-              />
-            </View>
-          </View>
-
-          {/* Color Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Color</Text>
-            <View style={styles.colorContainer}>
-              {HABIT_COLORS.map((color) => (
-                <TouchableOpacity
-                  key={color}
-                  style={[
-                    styles.colorOption,
-                    { backgroundColor: color },
-                    selectedColor === color && styles.selectedColorOption
-                  ]}
-                  onPress={() => setSelectedColor(color)}
-                  activeOpacity={0.7}
-                >
-                  {selectedColor === color && (
-                    <Palette size={16} color="#FFFFFF" strokeWidth={2} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Icon Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Icon</Text>
-            <View style={styles.iconContainer}>
-              {HABIT_ICONS.map((icon) => (
-                <TouchableOpacity
-                  key={icon}
-                  style={[
-                    styles.iconOption,
-                    selectedIcon === icon && styles.selectedIconOption
-                  ]}
-                  onPress={() => setSelectedIcon(icon)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.iconText}>{icon}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={onCancel}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: selectedColor }]}
-            onPress={handleSave}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.saveButtonText}>
-              {isEditing ? 'Update Habit' : 'Create Habit'}
-            </Text>
-          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* Color Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Color</Text>
+          <View style={styles.colorContainer}>
+            {HABIT_COLORS.map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={[
+                  styles.colorOption,
+                  { backgroundColor: color },
+                  selectedColor === color && styles.selectedColorOption
+                ]}
+                onPress={() => setSelectedColor(color)}
+                activeOpacity={0.7}
+              >
+                {selectedColor === color && (
+                  <Palette size={16} color="#FFFFFF" strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Icon Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Icon</Text>
+          <View style={styles.iconContainer}>
+            {HABIT_ICONS.map((icon) => (
+              <TouchableOpacity
+                key={icon}
+                style={[
+                  styles.iconOption,
+                  selectedIcon === icon && styles.selectedIconOption
+                ]}
+                onPress={() => setSelectedIcon(icon)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.iconText}>{icon}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={styles.actionButtons}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: selectedColor }]}
+          onPress={handleSave}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.saveButtonText}>
+            {isEditing ? 'Update Habit' : 'Create Habit'}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       <SimpleTimePickerModal
         visible={showTimePicker}
