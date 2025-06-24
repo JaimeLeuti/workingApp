@@ -121,7 +121,7 @@ export default function HabitDetailScreen() {
       
       // Reschedule notification if reminder time is set
       if (updatedHabit.reminderTime) {
-        await notificationService.sche duleHabitReminder(updatedHabit);
+        await notificationService.scheduleHabitReminder(updatedHabit);
       }
       
       setHabit(updatedHabit);
