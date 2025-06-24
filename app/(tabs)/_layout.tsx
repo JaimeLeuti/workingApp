@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
-import { CircleCheck as CheckCircle2, Target, Calendar, User } from 'lucide-react-native';
+import { CircleCheck as CheckCircle2, Target, CheckSquare, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -53,11 +53,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="calendar"
+        name="habits"
         options={{
-          title: 'Calendar',
+          title: 'Habits',
           tabBarIcon: ({ size, color }) => (
-            <Calendar size={24} color={color} strokeWidth={2.5} />
+            <CheckSquare size={24} color={color} strokeWidth={2.5} />
           ),
         }}
       />
